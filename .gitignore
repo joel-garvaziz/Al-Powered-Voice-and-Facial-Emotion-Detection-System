@@ -1,0 +1,22 @@
+# Ignore datasets only
+Datasets/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
+
+venv/
+data/
+__pycache__/
+*.pyc
+
+# large training files
+*.npy
