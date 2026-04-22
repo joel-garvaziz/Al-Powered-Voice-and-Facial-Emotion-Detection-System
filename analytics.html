@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmoSense — Analytics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #050810;
+      --surface: #0c1220;
+      --surface2: #111827;
+      --border: rgba(99, 179, 237, 0.12);
+      --border2: rgba(183, 148, 244, 0.12);
+      --accent: #63b3ed;
+      --accent2: #f6ad55;
+      --accent3: #68d391;
+      --accent4: #b794f4;
+      --red: #fc8181;
+      --text: #e2e8f0;
+      --muted: #4a5568;
+      --sidebar: 220px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html, body { min-height: 100%; overflow-x: hidden; overflow-y: auto; background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: var(--sidebar); flex-shrink: 0; height: 100vh; background: linear-gradient(180deg, #0a0f1a 0%, #080c16 100%);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; position: relative; z-index: 10;
+    }
+    .sb-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .sb-logo .logo-icon { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, rgba(99, 179, 237, 0.2), rgba(183, 148, 244, 0.2)); border: 1px solid rgba(99, 179, 237, 0.3); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .sb-logo .logo-text { font-size: 15px; font-weight: 800; letter-spacing: 0.08em; color: var(--text) }
+    .sb-logo .logo-ver { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 0.12em }
+    .sb-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px }
+    .nav-section { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.18em; color: var(--muted); padding: 12px 8px 6px; text-transform: uppercase }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: var(--muted); position: relative; border: 1px solid transparent; text-decoration: none;}
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.5; transition: opacity 0.2s }
+    .nav-item:hover { background: rgba(255, 255, 255, 0.04); color: var(--text) }
+    .nav-item.active { background: rgba(99, 179, 237, 0.08); color: var(--accent); border-color: rgba(99, 179, 237, 0.2); }
+    .nav-item.active svg { opacity: 1 }
+    
+    .main { flex: 1; display: flex; flex-direction: column; overflow: visible }
+    .header { padding: 14px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; background: rgba(5, 8, 16, 0.8); backdrop-filter: blur(12px); flex-shrink: 0; }
+    .header-title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em }
+    .header-title span { color: var(--accent) }
+    .header-breadcrumb { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.1em }
+    .header-spacer { flex: 1 }
+    
+    .user-chip { display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 20px; }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, rgba(99, 179, 237, 0.3), rgba(183, 148, 244, 0.3)); border: 1px solid rgba(99, 179, 237, 0.4); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; color: var(--accent); }
+    .user-name { font-size: 12px; font-weight: 700; letter-spacing: 0.04em }
+    
+    .dash { flex: 1; overflow-y: visible; padding: 24px; display: grid; gap: 20px; grid-template-columns: 1fr 1fr; align-content: start; }
+    
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; position: relative; }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .card-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+    .card-title { font-size: 13px; font-weight: 800; letter-spacing: 0.02em }
+    .card-body { padding: 20px; display: flex; justify-content: center; align-items: center; }
+    .wide-card { grid-column: 1 / -1; }
+    .timeline-wrap { width: 100%; display: flex; justify-content: center; }
+    .timeline-img {
+      width: 100%;
+      max-width: 980px;
+      height: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0a0f1a;
+      object-fit: contain;
+    }
+    .timeline-empty {
+      width: 100%;
+      text-align: center;
+      padding: 40px 12px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .timeline-status {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-align: right;
+      padding: 6px 18px 10px;
+      text-transform: uppercase;
+    }
+    .timeline-status .dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent3);
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sb-logo">
+        <div class="logo-icon">🧠</div>
+        <div>
+          <div class="logo-text">EmoSense</div>
+          <div class="logo-ver">v3.2.1</div>
+        </div>
+      </div>
+      <nav class="sb-nav">
+        <div class="nav-section">Main</div>
+        <a href="dashboard.html" class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1" /><rect x="9" y="1" width="6" height="6" rx="1" /><rect x="1" y="9" width="6" height="6" rx="1" /><rect x="9" y="9" width="6" height="6" rx="1" /></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="analytics.html" class="nav-item active">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,12 5,7 8,10 11,5 15,8" /></svg>
+          <span>Analytics</span>
+        </a>
+        <div class="nav-section">System</div>
+        <a href="sessions.html" class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5" /><line x1="1" y1="6" x2="15" y2="6" /><line x1="5" y1="10" x2="9" y2="10" /></svg>
+          <span>Sessions</span>
+        </a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="header">
+        <div>
+          <div class="header-title">Emotion <span>Analytics</span></div>
+          <div class="header-breadcrumb">EMOSENSE · METRICS</div>
+        </div>
+        <div class="header-spacer"></div>
+        <div class="user-chip">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-name" id="user-name">Loading...</div>
+        </div>
+      </header>
+      
+      <div class="dash">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-label">Latest Session</div>
+              <div class="card-title">Emotion Breakdown</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="width:100%; max-width: 300px;">
+              <canvas id="pieChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-label">7-Day Trends</div>
+              <div class="card-title">Number of Sessions</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="width:100%;">
+              <canvas id="barChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card wide-card">
+          <div class="card-header">
+            <div>
+              <div class="card-label">Post Detection</div>
+              <div class="card-title">Timeline Graph</div>
+            </div>
+            <div class="header-spacer" style="flex:1"></div>
+            <button id="refreshGraphBtn"
+              onclick="loadTimelineGraph()"
+              style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;background:rgba(99,179,237,0.1);border:1px solid rgba(99,179,237,0.25);color:var(--accent);padding:5px 12px;border-radius:5px;cursor:pointer;text-transform:uppercase;">
+              ↻ Refresh
+            </button>
+          </div>
+          <div class="card-body" style="flex-direction:column;gap:0;padding-bottom:12px;">
+            <div class="timeline-wrap" id="timelineWrap">
+              <img id="timelineGraph" class="timeline-img" alt="Emotion timeline graph" style="display:none;">
+              <div id="timelineEmpty" class="timeline-empty">No sessions completed yet — run a detection session first</div>
+            </div>
+            <div class="timeline-status" id="timelineStatus"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if(!localStorage.getItem("token")) window.location.href="index.html";
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    document.getElementById('user-name').textContent = user.firstName || 'User';
+    document.getElementById('user-avatar').textContent = (user.firstName || 'U').charAt(0).toUpperCase();
+    // Explicitly point to Flask backend instead of current origin if running on a differing dev port (like 8080)
+    let API_BASE = 'http://127.0.0.1:5000';
+    if (window.location.origin.includes('5000') || window.location.origin.includes('vercel')) {
+      API_BASE = window.location.origin;
+    }
+
+    const emotionColors = {
+        'Angry': '#fc8181',
+        'Disgust': '#f6e05e',
+        'Fear': '#b794f4',
+        'Happy': '#68d391',
+        'Neutral': '#718096',
+        'Sad': '#63b3ed',
+        'Surprise': '#f6ad55'
+    };
+
+    function loadTimelineGraph() {
+      const img       = document.getElementById('timelineGraph');
+      const emptyDiv  = document.getElementById('timelineEmpty');
+      const statusDiv = document.getElementById('timelineStatus');
+
+      // Fetch the graph as a binary blob from the backend API to avoid
+      // cross-origin / file:// path issues and force no-cache on every poll.
+      fetch(`${API_BASE}/api/timeline-graph`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+      .then(resp => {
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        return resp.blob();
+      })
+      .then(blob => {
+        // Revoke the previous blob URL to avoid memory leaks
+        if (img._blobUrl) URL.revokeObjectURL(img._blobUrl);
+        const url = URL.createObjectURL(blob);
+        img._blobUrl = url;
+        img.src = url;
+        img.style.display = '';
+        if (emptyDiv) emptyDiv.style.display = 'none';
+        const now = new Date().toLocaleTimeString();
+        if (statusDiv) statusDiv.innerHTML =
+          `<span class="dot"></span>Last updated: ${now} &nbsp;&middot;&nbsp; Auto-refreshes every 10s`;
+      })
+      .catch(() => {
+        img.style.display = 'none';
+        if (emptyDiv) emptyDiv.style.display = '';
+        if (statusDiv) statusDiv.innerHTML = '';
+      });
+    }
+
+    function drawEmptyChart(canvasId, message) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width || (canvas.width = canvas.offsetWidth || 320);
+      const height = canvas.height || (canvas.height = 220);
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#718096';
+      ctx.font = '12px DM Mono';
+      ctx.textAlign = 'center';
+      ctx.fillText(message, width / 2, height / 2);
+    }
+
+    async function loadAnalytics() {
+      try {
+        const r = await fetch(`${API_BASE}/api/analytics`, {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+
+        if (r.status === 401 || r.status === 422) {
+          alert("Security token expired or changed! Please log back in.");
+          localStorage.removeItem("token");
+          window.location.href = "index.html";
+          return;
+        }
+
+        if (!r.ok) {
+          drawEmptyChart('pieChart', 'Analytics unavailable');
+          drawEmptyChart('barChart', 'Analytics unavailable');
+          return;
+        }
+
+        const data = await r.json();
+        const distribution = Array.isArray(data?.distribution) ? data.distribution : [];
+        const timeSeries = Array.isArray(data?.time_series) ? data.time_series : [];
+
+        const distLabels = distribution.map(d => d.dominant_emotion || 'Unknown');
+        const distData = distribution.map(d => Number(d.count) || 0);
+        const distColors = distLabels.map(l => emotionColors[l] || '#cbd5e0');
+
+        if (distData.length) {
+          new Chart(document.getElementById('pieChart'), {
+            type: 'doughnut',
+            data: {
+              labels: distLabels,
+              datasets: [{
+                data: distData,
+                backgroundColor: distColors,
+                borderWidth: 0,
+                hoverOffset: 4
+              }]
+            },
+            options: {
+              plugins: {
+                legend: { labels: { color: '#e2e8f0' } }
+              }
+            }
+          });
+        } else {
+          drawEmptyChart('pieChart', 'No sessions yet');
+        }
+
+        const tsLabels = timeSeries.map(d => d.date || '-');
+        const tsData = timeSeries.map(d => Number(d.count) || 0);
+
+        if (tsData.length) {
+          new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+              labels: tsLabels,
+              datasets: [{
+                label: '# of Sessions',
+                data: tsData,
+                backgroundColor: '#63b3ed',
+                borderRadius: 4
+              }]
+            },
+            options: {
+              scales: {
+                y: { ticks: { color: '#a0aec0', stepSize: 1 } },
+                x: { ticks: { color: '#a0aec0' } }
+              },
+              plugins: { legend: { display: false } }
+            }
+          });
+        } else {
+          drawEmptyChart('barChart', 'No data in last 7 days');
+        }
+      } catch (err) {
+        console.error(err);
+        drawEmptyChart('pieChart', 'Cannot reach API on port 5000');
+        drawEmptyChart('barChart', 'Cannot reach API on port 5000');
+      }
+    }
+
+    loadAnalytics();
+    loadTimelineGraph();
+    // Auto-refresh the timeline graph every 10 seconds so it updates after each session
+    setInterval(loadTimelineGraph, 10000);
+  </script>
+</body>
+</html>

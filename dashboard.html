@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EmoSense — Dashboard</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ── Variables ── */
+    :root {
+      --bg: #050810;
+      --surface: #0c1220;
+      --surface2: #111827;
+      --border: rgba(99, 179, 237, 0.12);
+      --border2: rgba(183, 148, 244, 0.12);
+      --accent: #63b3ed;
+      --accent2: #f6ad55;
+      --accent3: #68d391;
+      --accent4: #b794f4;
+      --red: #fc8181;
+      --text: #e2e8f0;
+      --muted: #4a5568;
+      --sidebar: 220px;
+      --glow-b: 0 0 20px rgba(99, 179, 237, 0.25);
+      --glow-p: 0 0 20px rgba(183, 148, 244, 0.25);
+      --glow-g: 0 0 20px rgba(104, 211, 145, 0.25);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif
+    }
+
+    /* ── Layout ── */
+    .shell {
+      display: flex;
+      height: 100vh;
+      overflow: hidden
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar);
+      flex-shrink: 0;
+      height: 100vh;
+      background: linear-gradient(180deg, #0a0f1a 0%, #080c16 100%);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      z-index: 10;
+    }
+
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      left: -40px;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(99, 179, 237, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .sb-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sb-logo .logo-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(99, 179, 237, 0.2), rgba(183, 148, 244, 0.2));
+      border: 1px solid rgba(99, 179, 237, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .sb-logo .logo-text {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--text)
+    }
+
+    .sb-logo .logo-ver {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.12em
+    }
+
+    .sb-nav {
+      flex: 1;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px
+    }
+
+    .nav-section {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      padding: 12px 8px 6px;
+      text-transform: uppercase
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+      position: relative;
+      border: 1px solid transparent;
+    }
+
+    .nav-item svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      opacity: 0.5;
+      transition: opacity 0.2s
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text)
+    }
+
+    .nav-item:hover svg {
+      opacity: 0.8
+    }
+
+    .nav-item.active {
+      background: rgba(99, 179, 237, 0.08);
+      color: var(--accent);
+      border-color: rgba(99, 179, 237, 0.2);
+    }
+
+    .nav-item.active svg {
+      opacity: 1
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      bottom: 20%;
+      width: 2px;
+      background: var(--accent);
+      border-radius: 1px;
+      box-shadow: var(--glow-b);
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: rgba(99, 179, 237, 0.15);
+      color: var(--accent);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+    }
+
+    .sb-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border)
+    }
+
+    .sb-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: rgba(104, 211, 145, 0.06);
+      border: 1px solid rgba(104, 211, 145, 0.15);
+      border-radius: 6px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent3);
+      flex-shrink: 0;
+      box-shadow: 0 0 8px rgba(104, 211, 145, 0.6);
+      animation: pulse 2s ease-in-out infinite
+    }
+
+    .status-text {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--accent3)
+    }
+
+    /* ── Main area ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 14px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(5, 8, 16, 0.8);
+      backdrop-filter: blur(12px);
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em
+    }
+
+    .header-title span {
+      color: var(--accent)
+    }
+
+    .header-breadcrumb {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.1em
+    }
+
+    .header-spacer {
+      flex: 1
+    }
+
+    .mode-pill {
+      display: flex;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .mode-pill button {
+      padding: 6px 14px;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .mode-pill button.active {
+      background: rgba(99, 179, 237, 0.12);
+      color: var(--accent)
+    }
+
+    .mode-pill button:nth-child(2).active {
+      background: rgba(183, 148, 244, 0.12);
+      color: var(--accent4)
+    }
+
+    .mode-pill button:nth-child(3).active {
+      background: rgba(246, 173, 85, 0.12);
+      color: var(--accent2)
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px 6px 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(99, 179, 237, 0.3), rgba(183, 148, 244, 0.3));
+      border: 1px solid rgba(99, 179, 237, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+    }
+
+    .user-name {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em
+    }
+
+    .logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      background: rgba(252, 129, 129, 0.06);
+      border: 1px solid rgba(252, 129, 129, 0.2);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--red);
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      background: rgba(252, 129, 129, 0.12);
+      box-shadow: 0 0 12px rgba(252, 129, 129, 0.15)
+    }
+
+    /* ── Dashboard grid ── */
+    .dash {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1fr 340px;
+      grid-template-rows: auto auto auto;
+      align-content: start;
+    }
+
+    .dash::-webkit-scrollbar {
+      width: 4px
+    }
+
+    .dash::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    .dash::-webkit-scrollbar-thumb {
+      background: rgba(99, 179, 237, 0.2);
+      border-radius: 2px
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: visible;
+      /* allow content to be fully visible */
+      position: relative;
+    }
+
+    /* restore clipping only for the shimmer pseudo-element */
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      pointer-events: none;
+      box-shadow: inset 0 0 0 1px var(--border);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.015) 0%, transparent 60%);
+    }
+
+    .card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em
+    }
+
+    .card-spacer {
+      flex: 1
+    }
+
+    .card-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+
+    .badge-live {
+      background: rgba(104, 211, 145, 0.1);
+      color: var(--accent3);
+      border: 1px solid rgba(104, 211, 145, 0.2)
+    }
+
+    .badge-idle {
+      background: rgba(74, 85, 104, 0.2);
+      color: var(--muted);
+      border: 1px solid rgba(74, 85, 104, 0.2)
+    }
+
+    /* ── Live Detection ── */
+    .detect-card {
+      grid-column: 1;
+      grid-row: 1
+    }
+
+    /* Camera stacks on top, controls bar sits below */
+    .detect-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px
+    }
+
+    .cam-wrap {
+      width: 100%;
+      height: 420px;
+      /* fixed height — reliable in all flex contexts */
+      background: #020408;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 240px;
+    }
+
+    .cam-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none
+    }
+
+    .cam-wrap video.active {
+      display: block
+    }
+
+    .cam-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cam-placeholder svg {
+      width: 56px;
+      height: 56px;
+      color: var(--muted);
+      opacity: 0.3
+    }
+
+    .cam-placeholder p {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.14em
+    }
+
+    .cam-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      transition: border-color 0.3s;
+    }
+
+    .cam-wrap.detecting .cam-overlay {
+      border-color: rgba(104, 211, 145, 0.5);
+      box-shadow: inset 0 0 30px rgba(104, 211, 145, 0.07)
+    }
+
+    .cam-corner {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: var(--accent3);
+      opacity: 0;
+      transition: opacity 0.3s
+    }
+
+    .cam-wrap.detecting .cam-corner {
+      opacity: 1
+    }
+
+    .cam-corner.tl {
+      top: 10px;
+      left: 10px;
+      border-top: 2px solid;
+      border-left: 2px solid
+    }
+
+    .cam-corner.tr {
+      top: 10px;
+      right: 10px;
+      border-top: 2px solid;
+      border-right: 2px solid
+    }
+
+    .cam-corner.bl {
+      bottom: 10px;
+      left: 10px;
+      border-bottom: 2px solid;
+      border-left: 2px solid
+    }
+
+    .cam-corner.br {
+      bottom: 10px;
+      right: 10px;
+      border-bottom: 2px solid;
+      border-right: 2px solid
+    }
+
+    /* ── Audio-only Panel ── */
+    .audio-panel {
+      width: 100%;
+      height: 420px;
+      background: #020408;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      display: none;              /* hidden by default; shown in audio/fusion mode */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+    .audio-panel.visible { display: flex; }
+    .audio-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 70%, rgba(183,148,244,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    /* Mic status ring */
+    .mic-ring {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: rgba(183,148,244,0.06);
+      border: 1px solid rgba(183,148,244,0.25);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .mic-ring.active {
+      border-color: rgba(183,148,244,0.6);
+      box-shadow: 0 0 24px rgba(183,148,244,0.25), 0 0 48px rgba(183,148,244,0.08);
+      animation: micPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes micPulse {
+      0%,100%{ box-shadow:0 0 20px rgba(183,148,244,0.2),0 0 40px rgba(183,148,244,0.06) }
+      50%{ box-shadow:0 0 40px rgba(183,148,244,0.4),0 0 80px rgba(183,148,244,0.12) }
+    }
+    .mic-icon { font-size: 36px; line-height: 1; }
+    .mic-status {
+      font-family: 'DM Mono', monospace; font-size: 10px;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .mic-status.active { color: var(--accent4); }
+    /* Large waveform bars */
+    .audio-wave-large {
+      display: flex; align-items: center; gap: 4px; height: 100px;
+    }
+    .awl-bar {
+      width: 5px; border-radius: 3px;
+      background: linear-gradient(180deg, var(--accent4), rgba(183,148,244,0.3));
+      animation: waveL 1.1s ease-in-out infinite;
+      transform-origin: center;
+      opacity: 0.2; transition: opacity 0.4s;
+    }
+    .audio-panel.active .awl-bar { opacity: 1; }
+    @keyframes waveL {
+      0%,100%{ transform: scaleY(0.12) }
+      50%{ transform: scaleY(1) }
+    }
+    /* freq spectrum */
+    .freq-row {
+      display: flex; align-items: flex-end; gap: 3px; height: 40px;
+      opacity: 0.4; transition: opacity 0.4s;
+    }
+    .audio-panel.active .freq-row { opacity: 1; }
+    .freq-bar {
+      width: 8px; border-radius: 2px 2px 0 0;
+      background: var(--accent);
+      animation: freqA 0.8s ease-in-out infinite alternate;
+    }
+    @keyframes freqA { from{ height:4px } to{ height:100% } }
+    /* Overlay border when active */
+    .audio-panel.active { border-color: rgba(183,148,244,0.4); }
+
+    /* Horizontal controls bar beneath the camera */
+    .detect-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .detect-btn {
+      padding: 9px 20px;
+      border-radius: 7px;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.25s;
+      white-space: nowrap;
+    }
+
+    .detect-btn.start {
+      background: rgba(104, 211, 145, 0.08);
+      border-color: rgba(104, 211, 145, 0.35);
+      color: var(--accent3);
+    }
+
+    .detect-btn.start:hover {
+      background: rgba(104, 211, 145, 0.15);
+      box-shadow: var(--glow-g)
+    }
+
+    .detect-btn.stop {
+      background: rgba(252, 129, 129, 0.08);
+      border-color: rgba(252, 129, 129, 0.35);
+      color: var(--red);
+      display: none;
+    }
+
+    .detect-btn.stop:hover {
+      background: rgba(252, 129, 129, 0.15)
+    }
+
+    /* Mode buttons inline */
+    .mode-select-v {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      justify-content: flex-end
+    }
+
+    .msel-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+
+    .msel-btn .msel-icon {
+      font-size: 13px
+    }
+
+    .msel-btn:hover {
+      border-color: rgba(99, 179, 237, 0.3);
+      color: var(--text)
+    }
+
+    .msel-btn.active {
+      background: rgba(99, 179, 237, 0.08);
+      border-color: rgba(99, 179, 237, 0.3);
+      color: var(--accent)
+    }
+
+    /* Audio meter now a thin inline bar */
+    .audio-meter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 12px;
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .audio-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .waveform {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 22px;
+      flex: 1
+    }
+
+    .wave-bar {
+      flex: 1;
+      max-width: 4px;
+      border-radius: 2px;
+      background: var(--accent4);
+      animation: wave 1s ease-in-out infinite;
+      transform-origin: center;
+      opacity: 0.25;
+      transition: opacity 0.3s;
+    }
+
+    .detecting .wave-bar {
+      opacity: 1
+    }
+
+    @keyframes wave {
+
+      0%,
+      100% {
+        transform: scaleY(0.2)
+      }
+
+      50% {
+        transform: scaleY(1)
+      }
+    }
+
+    .db-meter {
+      display: none
+    }
+
+    /* hidden in inline layout */
+    .db-bar-bg {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+      overflow: hidden
+    }
+
+    .db-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent3), var(--accent));
+      transition: width 0.15s
+    }
+
+    /* ── Emotion Panel ── */
+    .emotion-card {
+      grid-column: 2;
+      grid-row: 1 / 3
+    }
+
+    .emotion-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      height: calc(100% - 49px)
+    }
+
+    .emo-big {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 24px 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .emo-emoji {
+      font-size: 64px;
+      line-height: 1;
+      filter: drop-shadow(0 0 20px rgba(183, 148, 244, 0.4));
+      animation: emoPop 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+      transition: all 0.3s
+    }
+
+    @keyframes emoPop {
+      from {
+        transform: scale(0.5);
+        opacity: 0
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1
+      }
+    }
+
+    .emo-label {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      text-align: center;
+      transition: all 0.4s;
+    }
+
+    .emo-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-transform: uppercase
+    }
+
+    .confidence-wrap {
+      padding: 0 4px
+    }
+
+    .conf-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px
+    }
+
+    .conf-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase
+    }
+
+    .conf-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--accent4)
+    }
+
+    .conf-bar-bg {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+      overflow: hidden
+    }
+
+    .conf-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 3px;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      background: linear-gradient(90deg, var(--accent4), var(--accent));
+    }
+
+    .emotion-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .breakdown-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 4px
+    }
+
+    .emo-row {
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .emo-row-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      width: 56px;
+      flex-shrink: 0
+    }
+
+    .emo-row-bar {
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+      overflow: hidden
+    }
+
+    .emo-row-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1)
+    }
+
+    .emo-row-pct {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      width: 28px;
+      text-align: right
+    }
+
+    /* ── Chart ── */
+    .chart-card {
+      grid-column: 1;
+      grid-row: 2
+    }
+
+    .chart-wrap {
+      padding: 18px;
+      position: relative
+    }
+
+    canvas#emo-chart {
+      width: 100%;
+      height: 180px;
+      display: block
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      padding: 0 18px 14px;
+      flex-wrap: wrap
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.1em
+    }
+
+    .legend-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0
+    }
+
+    /* ── Session Panel ── */
+    .session-card {
+      grid-column: 1;
+      grid-row: 3
+    }
+
+    .session-card.full {
+      grid-column: 1/-1
+    }
+
+    .session-body {
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap
+    }
+
+    .timer-display {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 20px;
+    }
+
+    .timer-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase
+    }
+
+    .timer-clock {
+      font-family: 'DM Mono', monospace;
+      font-size: 26px;
+      letter-spacing: 0.08em;
+      color: var(--text)
+    }
+
+    .timer-clock.running {
+      color: var(--accent3)
+    }
+
+    .session-stats {
+      display: flex;
+      gap: 16px;
+      flex: 1
+    }
+
+    .stat-box {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 4px
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em
+    }
+
+    .session-btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .sess-btn {
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      border: 1px solid;
+      transition: all 0.2s;
+    }
+
+    .sess-btn.primary {
+      background: rgba(183, 148, 244, 0.1);
+      border-color: rgba(183, 148, 244, 0.35);
+      color: var(--accent4)
+    }
+
+    .sess-btn.primary:hover {
+      background: rgba(183, 148, 244, 0.18);
+      box-shadow: var(--glow-p)
+    }
+
+    .sess-btn.secondary {
+      background: rgba(99, 179, 237, 0.08);
+      border-color: rgba(99, 179, 237, 0.25);
+      color: var(--accent)
+    }
+
+    .sess-btn.secondary:hover {
+      background: rgba(99, 179, 237, 0.14)
+    }
+
+    .sess-btn.ghost {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--muted)
+    }
+
+    .sess-btn.ghost:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      color: var(--text)
+    }
+
+    .sess-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none
+    }
+
+    /* ── Stats row ── */
+    .stats-row {
+      grid-column: 1/-1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      order: -1
+    }
+
+    .mini-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .mini-stat:hover {
+      border-color: rgba(99, 179, 237, 0.25)
+    }
+
+    .mini-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .mini-info .mini-val {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em
+    }
+
+    .mini-info .mini-lbl {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 2px
+    }
+
+    /* ── Animations ── */
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.4
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .card {
+      animation: fadeUp 0.5s both
+    }
+
+    .card:nth-child(2) {
+      animation-delay: 0.06s
+    }
+
+    .card:nth-child(3) {
+      animation-delay: 0.12s
+    }
+
+    .card:nth-child(4) {
+      animation-delay: 0.18s
+    }
+
+    .card:nth-child(5) {
+      animation-delay: 0.24s
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast.show {
+      transform: none;
+      opacity: 1
+    }
+
+    .toast-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0
+    }
+
+    /* ── Responsive ── */
+    @media(max-width:1100px) {
+      :root {
+        --sidebar: 64px
+      }
+
+      .sb-logo .logo-text,
+      .sb-logo .logo-ver,
+      .nav-item span,
+      .nav-badge,
+      .nav-section,
+      .sb-status .status-text {
+        display: none
+      }
+
+      .sb-logo {
+        justify-content: center;
+        padding: 20px 0
+      }
+
+      .nav-item {
+        justify-content: center;
+        padding: 12px 0
+      }
+
+      .nav-item.active::before {
+        display: none
+      }
+
+      .mode-select-v .msel-btn span:last-child {
+        display: none
+      }
+    }
+
+    @media(max-width:900px) {
+      .dash {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto
+      }
+
+      .emotion-card {
+        grid-column: 1;
+        grid-row: auto
+      }
+
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="shell">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar">
+      <div class="sb-logo">
+        <div class="logo-icon">🧠</div>
+        <div>
+          <div class="logo-text">EmoSense</div>
+          <div class="logo-ver">v3.2.1</div>
+        </div>
+      </div>
+
+      <nav class="sb-nav">
+        <div class="nav-section">Main</div>
+        <div class="nav-item active" onclick="navTo(this,'Dashboard')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <rect x="1" y="1" width="6" height="6" rx="1" />
+            <rect x="9" y="1" width="6" height="6" rx="1" />
+            <rect x="1" y="9" width="6" height="6" rx="1" />
+            <rect x="9" y="9" width="6" height="6" rx="1" />
+          </svg>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-item" onclick="navTo(this,'Live Detection')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="8" cy="8" r="3" />
+            <circle cx="8" cy="8" r="6.5" stroke-dasharray="2 2" />
+            <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
+          </svg>
+          <span>Live Detection</span>
+          <span class="nav-badge">Live</span>
+        </div>
+        <div class="nav-item" onclick="navTo(this,'Analytics')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <polyline points="1,12 5,7 8,10 11,5 15,8" />
+          </svg>
+          <span>Analytics</span>
+        </div>
+        <div class="nav-section">System</div>
+        <div class="nav-item" onclick="navTo(this,'Sessions')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <rect x="1" y="3" width="14" height="10" rx="1.5" />
+            <line x1="1" y1="6" x2="15" y2="6" />
+            <line x1="5" y1="10" x2="9" y2="10" />
+          </svg>
+          <span>Sessions</span>
+        </div>
+        <div class="nav-item" onclick="navTo(this,'Settings')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="8" cy="8" r="2.5" />
+            <path
+              d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.2 3.2l.85.85M11.95 11.95l.85.85M12.8 3.2l-.85.85M4.05 11.95l-.85.85" />
+          </svg>
+          <span>Settings</span>
+        </div>
+      </nav>
+
+      <div class="sb-footer">
+        <div class="sb-status">
+          <div class="status-dot"></div>
+          <span class="status-text">SYSTEM ONLINE</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <div class="main">
+
+      <!-- Header -->
+      <header class="header">
+        <div>
+          <div class="header-title">Emotion <span id="page-title">Dashboard</span></div>
+          <div class="header-breadcrumb">EMOSENSE · REAL-TIME AI</div>
+        </div>
+        <div class="header-spacer"></div>
+
+        <!-- Mode selector -->
+        <div class="mode-pill">
+          <button class="active" onclick="setMode(this,'visual')">👁 VISUAL</button>
+          <button onclick="setMode(this,'audio')">🎙 AUDIO</button>
+          <button onclick="setMode(this,'fusion')">⚡ FUSION</button>
+        </div>
+
+        <!-- User chip -->
+        <div class="user-chip">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-name" id="user-name">Loading…</div>
+        </div>
+
+        <!-- Logout -->
+        <button class="logout-btn" onclick="handleLogout()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round">
+            <path d="M6 2H2.5A1.5 1.5 0 001 3.5v9A1.5 1.5 0 002.5 14H6" />
+            <polyline points="11,5 14,8 11,11" />
+            <line x1="14" y1="8" x2="6" y2="8" />
+          </svg>
+          LOGOUT
+        </button>
+      </header>
+
+      <!-- Dashboard grid -->
+      <div class="dash" id="dash">
+
+        <!-- Stats row -->
+        <div class="stats-row">
+          <div class="mini-stat">
+            <div class="mini-icon" style="background:rgba(99,179,237,0.1);border:1px solid rgba(99,179,237,0.2)">😌
+            </div>
+            <div class="mini-info">
+              <div class="mini-val" id="stat-dominant" style="color:var(--accent)">Calm</div>
+              <div class="mini-lbl">Dominant Emotion</div>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-icon" style="background:rgba(104,211,145,0.1);border:1px solid rgba(104,211,145,0.2)">📊
+            </div>
+            <div class="mini-info">
+              <div class="mini-val" id="stat-conf" style="color:var(--accent3)">92%</div>
+              <div class="mini-lbl">Confidence</div>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-icon" style="background:rgba(183,148,244,0.1);border:1px solid rgba(183,148,244,0.2)">⏱
+            </div>
+            <div class="mini-info">
+              <div class="mini-val" id="stat-sessions" style="color:var(--accent4)">0</div>
+              <div class="mini-lbl">Sessions Today</div>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-icon" style="background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.2)">🎯
+            </div>
+            <div class="mini-info">
+              <div class="mini-val" id="stat-frames" style="color:var(--accent2)">0</div>
+              <div class="mini-lbl">Frames Analysed</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Detection -->
+        <div class="card detect-card">
+          <div class="card-header">
+            <div>
+              <div class="card-label" id="detect-label">Detection Engine</div>
+              <div class="card-title" id="detect-title">Live Feed — Visual</div>
+            </div>
+            <div class="card-spacer"></div>
+            <span class="card-badge badge-idle" id="detect-badge">IDLE</span>
+          </div>
+          <div class="detect-body">
+
+            <!-- ① CAMERA PANEL (Visual + Fusion) -->
+            <div class="cam-wrap" id="cam-wrap">
+              <video id="cam-video" autoplay muted playsinline></video>
+              <div class="cam-placeholder" id="cam-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                  <path d="M23 7l-7 5 7 5V7z" />
+                  <rect x="1" y="5" width="15" height="14" rx="2" />
+                </svg>
+                <p>CAMERA INACTIVE — CLICK START</p>
+              </div>
+              <div class="cam-overlay">
+                <div class="cam-corner tl"></div>
+                <div class="cam-corner tr"></div>
+                <div class="cam-corner bl"></div>
+                <div class="cam-corner br"></div>
+              </div>
+            </div>
+
+            <!-- ② AUDIO PANEL (Voice + Fusion) -->
+            <div class="audio-panel" id="audio-panel">
+              <!-- large animated waveform -->
+              <div class="audio-wave-large" id="awl"></div>
+              <!-- mic ring + label -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+                <div class="mic-ring" id="mic-ring">
+                  <div class="mic-icon">🎙</div>
+                </div>
+                <div class="mic-status" id="mic-status">MICROPHONE INACTIVE — CLICK START</div>
+              </div>
+              <!-- frequency bars -->
+              <div class="freq-row" id="freq-row"></div>
+            </div>
+
+            <!-- ③ CONTROLS STRIP (always visible) -->
+            <div class="detect-controls">
+              <button class="detect-btn start" id="btn-start" onclick="toggleDetection()">▶ START</button>
+              <button class="detect-btn stop" id="btn-stop" onclick="toggleDetection()">■ STOP</button>
+
+              <div class="audio-meter" id="audio-meter">
+                <div class="audio-label">Audio</div>
+                <div class="waveform" id="waveform-small"></div>
+                <div class="db-bar-bg" style="width:80px">
+                  <div class="db-bar-fill" id="db-fill"></div>
+                </div>
+                <span id="db-val"
+                  style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);min-width:30px">—</span>
+              </div>
+
+              <div class="mode-select-v">
+                <button class="msel-btn active" id="ms-visual" onclick="setModeBtn(this,'visual')"><span
+                    class="msel-icon">👁</span>Visual</button>
+                <button class="msel-btn" id="ms-audio" onclick="setModeBtn(this,'audio')"><span
+                    class="msel-icon">🎙</span>Audio</button>
+                <button class="msel-btn" id="ms-fusion" onclick="setModeBtn(this,'fusion')"><span
+                    class="msel-icon">⚡</span>Fusion</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emotion Output -->
+        <div class="card emotion-card">
+          <div class="card-header">
+            <div>
+              <div class="card-label">Emotion Engine</div>
+              <div class="card-title">Real-time Output</div>
+            </div>
+            <div class="card-spacer"></div>
+            <span class="card-badge badge-idle" id="emo-badge">WAITING</span>
+          </div>
+          <div class="emotion-body">
+            <div class="emo-big">
+              <div class="emo-emoji" id="emo-emoji">😌</div>
+              <div class="emo-label" id="emo-label">Calm</div>
+              <div class="emo-sub" id="emo-sub">awaiting detection</div>
+            </div>
+
+            <div class="confidence-wrap">
+              <div class="conf-header">
+                <span class="conf-label">Confidence</span>
+                <span class="conf-value" id="conf-val">—%</span>
+              </div>
+              <div class="conf-bar-bg">
+                <div class="conf-bar-fill" id="conf-bar"></div>
+              </div>
+            </div>
+
+            <div class="emotion-breakdown">
+              <div class="breakdown-title">Emotion Breakdown</div>
+              <div id="breakdown-rows"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="card chart-card">
+          <div class="card-header">
+            <div>
+              <div class="card-label">Time Series</div>
+              <div class="card-title">Emotion Over Time</div>
+            </div>
+            <div class="card-spacer"></div>
+            <span class="card-badge badge-idle" id="chart-badge">PAUSED</span>
+          </div>
+          <div class="chart-wrap" style="padding: 16px; display: flex; align-items: center; justify-content: center; min-height: 220px; flex-direction: column;">
+            <img id="timeline-graph-img" src="" style="max-width: 100%; max-height: 220px; border-radius: 6px; display: none; margin-bottom: 12px; border: 1px solid var(--border);" alt="Timeline Graph">
+            <div id="timeline-graph-placeholder" style="font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); text-align: center; letter-spacing: 0.1em; line-height: 1.6;">
+                No evaluation graph available.<br>Start a 10s session to generate a timeline.
+            </div>
+            <div id="timeline-status" style="font-family: 'DM Mono', monospace; font-size: 9px; color: var(--accent); margin-top: 8px; display: none;"></div>
+          </div>
+        </div>
+
+        <!-- Session -->
+        <div class="card session-card">
+          <div class="card-header">
+            <div>
+              <div class="card-label">Recording</div>
+              <div class="card-title">Session Control</div>
+            </div>
+            <div class="card-spacer"></div>
+            <span class="card-badge badge-idle" id="sess-badge">INACTIVE</span>
+          </div>
+          <div class="session-body">
+            <div class="timer-display">
+              <div class="timer-label">Duration</div>
+              <div class="timer-clock" id="timer-clock">00:00:00</div>
+            </div>
+
+            <div class="session-stats">
+              <div class="stat-box">
+                <div class="stat-label">Emotions</div>
+                <div class="stat-value" id="sess-emotions" style="color:var(--accent4)">0</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">Peak</div>
+                <div class="stat-value" id="sess-peak" style="color:var(--accent2)">—</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">Avg. Conf</div>
+                <div class="stat-value" id="sess-avgconf" style="color:var(--accent3)">—</div>
+              </div>
+            </div>
+
+            <div class="session-btns">
+              <button class="sess-btn primary" id="sess-start-btn" onclick="toggleSession()">⏺ Record</button>
+              <button class="sess-btn secondary" id="sess-export-btn" onclick="exportSession()" disabled>⬇
+                Export</button>
+              <button class="sess-btn ghost" id="sess-clear-btn" onclick="clearSession()" disabled>✕ Clear</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /dash -->
+    </div><!-- /main -->
+  </div><!-- /shell -->
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <div class="toast-dot" id="toast-dot"></div>
+    <span id="toast-msg"></span>
+  </div>
+
+  <!-- Socket.IO Client -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+  
+  <script>
+    // Initialize WebSocket connection to backend
+    const socket = io('http://127.0.0.1:5000');
+    socket.on('connect', () => console.log('WebSocket Connected:', socket.id));
+
+    // Listen for real-time model predictions
+    socket.on('emotion_update', (data) => {
+        if (!detecting) return;
+        const emoName = data.emotion;
+        
+        // Find matching emotion config for style
+        const baseEmo = EMOTIONS.find(e => e.label.toLowerCase() === emoName.toLowerCase()) || EMOTIONS[4];
+        
+        const confObj = data.probabilities ? Math.max(...data.probabilities) * 100 : 0;
+        const confidence = parseFloat(confObj).toFixed(1);
+        
+        setEmotion(baseEmo, parseFloat(confidence), data.probabilities);
+
+        frameCount++;
+        document.getElementById('stat-frames').textContent = frameCount;
+        document.getElementById('stat-dominant').textContent = baseEmo.label;
+        document.getElementById('stat-conf').textContent = confidence + '%';
+        
+        if (sessionRunning) {
+            sessionData.push({ emo: baseEmo.label, conf: parseFloat(confidence), time: Date.now() });
+            document.getElementById('sess-emotions').textContent = sessionData.length;
+            const avgConf = Math.round(sessionData.reduce((a, b) => a + b.conf, 0) / sessionData.length);
+            document.getElementById('sess-avgconf').textContent = avgConf + '%';
+            const peak = sessionData.reduce((a, b) => a.conf > b.conf ? a : b);
+            document.getElementById('sess-peak').textContent = peak.emo;
+        }
+    });
+    
+    socket.on('session_ended', (data) => {
+        toast('Evaluation Complete! Dominant Emotion: ' + data.dominant_emotion, 'var(--accent3)');
+        stopDetectionCleanly();
+        setTimeout(loadTimelineGraph, 500); // Give backend time to save image
+    });
+
+    /* ═══════════════════════════════════════════════════════════
+       EmoSense Dashboard — Main Script
+       ═══════════════════════════════════════════════════════════ */
+
+    // ── User from localStorage ────────────────────────────────
+    (function initUser() {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const name = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Operator';
+        document.getElementById('user-name').textContent = name;
+        document.getElementById('user-avatar').textContent = name.charAt(0).toUpperCase();
+      } catch {
+        document.getElementById('user-name').textContent = 'Operator';
+        document.getElementById('user-avatar').textContent = 'O';
+      }
+    })();
+
+    // ── Logout ────────────────────────────────────────────────
+    function handleLogout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      toast('Logged out successfully.', 'var(--accent3)');
+      setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+    }
+
+    // ── Navigation ────────────────────────────────────────────
+    function navTo(el, name) {
+      const routes = {
+        'Dashboard': 'dashboard.html',
+        'Live Detection': 'dashboard.html',
+        'Analytics': 'analytics.html',
+        'Sessions': 'sessions.html',
+      };
+
+      const target = routes[name];
+      if (target) {
+        window.location.href = target;
+        return;
+      }
+
+      // Keep placeholder items non-breaking until those pages exist.
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('page-title').textContent = name;
+      toast(`${name} page is not implemented yet.`, 'var(--accent2)');
+    }
+
+    // ── Mode ──────────────────────────────────────────────────
+    let currentMode = 'visual';
+    function setMode(btn, mode) {
+      document.querySelectorAll('.mode-pill button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      setModeInternal(mode);
+    }
+    function setModeBtn(btn, mode) {
+      document.querySelectorAll('.msel-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // sync top pill
+      const pills = document.querySelectorAll('.mode-pill button');
+      const idx = mode === 'visual' ? 0 : mode === 'audio' ? 1 : 2;
+      pills.forEach(b => b.classList.remove('active'));
+      pills[idx].classList.add('active');
+      setModeInternal(mode);
+    }
+    function setModeInternal(mode) {
+      currentMode = mode;
+
+      const cam   = document.getElementById('cam-wrap');
+      const apanel= document.getElementById('audio-panel');
+      const title  = document.getElementById('detect-title');
+      const ameter = document.getElementById('audio-meter');
+
+      // Stop detection when mode changes
+      if (detecting) toggleDetection();
+
+      if (mode === 'visual') {
+        cam.style.display    = 'flex';
+        apanel.classList.remove('visible');
+        title.textContent    = 'Live Feed — Visual';
+        ameter.style.display = 'none';
+      } else if (mode === 'audio') {
+        cam.style.display    = 'none';
+        apanel.classList.add('visible');
+        title.textContent    = 'Live Feed — Voice';
+        ameter.style.display = 'flex';
+      } else {  /* fusion */
+        cam.style.display    = 'flex';
+        // In fusion mode we show the camera feed, but keep the large audio panel hidden
+        // (the small audio meter in the controls strip stays visible to show voice capture)
+        apanel.classList.remove('visible');
+        title.textContent    = 'Live Feed — Fusion';
+        ameter.style.display = 'flex';
+      }
+
+      const modeColors = { visual:'var(--accent)', audio:'var(--accent4)', fusion:'var(--accent2)' };
+      toast(`Mode: ${mode.toUpperCase()}`, modeColors[mode]);
+    }
+
+    // ── Waveform ──────────────────────────────────────────────
+    const wf = document.getElementById('waveform-small');
+    for (let i = 0; i < 18; i++) {
+      const b = document.createElement('div');
+      b.className = 'wave-bar';
+      b.style.animationDelay = `${(i * 0.07).toFixed(2)}s`;
+      b.style.animationDuration = `${0.7 + Math.random() * 0.7}s`;
+      if (i % 3 === 0) b.style.background = 'var(--accent)';
+      if (i % 5 === 0) b.style.background = 'var(--accent3)';
+      wf.appendChild(b);
+    }
+
+    // ── Detection State ───────────────────────────────────────
+    let detecting = false;
+    let stream = null;
+    let detectionInterval = null;
+    let frameCount = 0;
+    let evaluationTimer = null;
+    let evaluationRemaining = 10;
+    
+    function sendVideoFrame() {
+      if (!detecting) return;
+      if (currentMode === 'visual' || currentMode === 'fusion') {
+        const video = document.getElementById('cam-video');
+        if (video.videoWidth > 0) {
+          captureCanvas.width = 640;
+          captureCanvas.height = 480; 
+          captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+          const base64Frame = captureCanvas.toDataURL('image/jpeg', 0.8);
+          socket.emit('video_frame', base64Frame);
+        }
+      }
+    }
+
+    async function toggleDetection() {
+      if (!detecting) {
+        // Start Detection
+        const constraints = {
+          video: currentMode === 'visual' || currentMode === 'fusion',
+          audio: currentMode === 'audio' || currentMode === 'fusion'
+        };
+
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          
+          if (constraints.video) {
+            const video = document.getElementById('cam-video');
+            video.srcObject = stream;
+            video.classList.add('active');
+            document.getElementById('cam-placeholder').style.display = 'none';
+            document.getElementById('cam-wrap').classList.add('detecting');
+          }
+          if (constraints.audio) {
+            document.getElementById('audio-meter').classList.add('detecting');
+            document.getElementById('audio-panel').classList.add('active');
+            document.getElementById('mic-ring').classList.add('active');
+            document.getElementById('mic-status').textContent = 'MICROPHONE ACTIVE — LISTENING';
+            document.getElementById('mic-status').classList.add('active');
+          }
+        } catch (e) {
+          toast('Camera/mic access denied.', 'var(--accent2)');
+          return;
+        }
+        
+        detecting = true;
+        frameCount = 0;
+        document.getElementById('btn-start').style.display = 'none';
+        document.getElementById('btn-stop').style.display = 'block';
+        document.getElementById('detect-badge').textContent = 'LIVE';
+        document.getElementById('detect-badge').className = 'card-badge badge-live';
+        document.getElementById('chart-badge').textContent = 'LIVE';
+        document.getElementById('chart-badge').className = 'card-badge badge-live';
+        document.getElementById('emo-badge').textContent = 'ACTIVE';
+        document.getElementById('emo-badge').className = 'card-badge badge-live';
+        
+        socket.emit('start_session', { token: localStorage.getItem('token') });
+        
+        // Transmit video at ~10 FPS
+        detectionInterval = setInterval(sendVideoFrame, 100); 
+        
+        if (constraints.audio) startAudioMeter();
+        else simulateAudio();
+        
+        // Ensure UI session tracking runs as well 
+        if (!sessionRunning) toggleSession();
+        
+        evaluationRemaining = 10;
+        document.getElementById('btn-stop').textContent = `■ STOP (${evaluationRemaining}s)`;
+        
+        evaluationTimer = setInterval(() => {
+            evaluationRemaining--;
+            document.getElementById('btn-stop').textContent = `■ STOP (${evaluationRemaining}s)`;
+            if (evaluationRemaining <= 0) {
+                socket.emit('stop_session', {});
+                stopDetectionCleanly();
+            }
+        }, 1000);
+        
+        toast('10-Second AI Evaluation started.', 'var(--accent3)');
+      } else {
+        // Explicit Stop
+        socket.emit('stop_session', {});
+        stopDetectionCleanly();
+      }
+    }
+    
+    function stopDetectionCleanly() {
+        if (!detecting) return;
+        
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+        
+        const video = document.getElementById('cam-video');
+        video.classList.remove('active');
+        video.srcObject = null;
+        document.getElementById('cam-placeholder').style.display = 'flex';
+        document.getElementById('cam-wrap').classList.remove('detecting');
+        
+        document.getElementById('audio-meter').classList.remove('detecting');
+        document.getElementById('audio-panel').classList.remove('active');
+        document.getElementById('mic-ring').classList.remove('active');
+        document.getElementById('mic-status').textContent = 'MICROPHONE INACTIVE — CLICK START';
+        document.getElementById('mic-status').classList.remove('active');
+        
+        detecting = false;
+        clearInterval(detectionInterval);
+        clearInterval(evaluationTimer);
+        stopAudioMeter();
+        
+        if (sessionRunning) toggleSession(); // Stop session recording
+        
+        document.getElementById('btn-start').style.display = 'block';
+        document.getElementById('btn-stop').style.display = 'none';
+        document.getElementById('btn-stop').textContent = '■ STOP';
+        document.getElementById('detect-badge').textContent = 'IDLE';
+        document.getElementById('detect-badge').className = 'card-badge badge-idle';
+        document.getElementById('chart-badge').textContent = 'PAUSED';
+        document.getElementById('chart-badge').className = 'card-badge badge-idle';
+        document.getElementById('emo-badge').textContent = 'WAITING';
+        document.getElementById('emo-badge').className = 'card-badge badge-idle';
+        document.getElementById('emo-sub').textContent = 'awaiting detection';
+        document.getElementById('db-fill').style.width = '0%';
+        document.getElementById('db-val').textContent = '—';
+    }
+
+    // ── Audio Meter & Streaming ───────────────────────────────
+    let audioCtx, analyser, audioSource, rafId;
+    let processorNode = null;
+    
+    function startAudioMeter() {
+      if (!stream) { simulateAudio(); return; }
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        audioSource = audioCtx.createMediaStreamSource(stream);
+        
+        // Setup ScriptProcessor for Float32 raw extraction
+        processorNode = audioCtx.createScriptProcessor(4096, 1, 1);
+        
+        audioSource.connect(analyser);
+        analyser.connect(processorNode);
+        processorNode.connect(audioCtx.destination);
+        
+        const buf = new Uint8Array(analyser.frequencyBinCount);
+
+        processorNode.onaudioprocess = (e) => {
+            if (!detecting || !socket.connected) return;
+            // Float32Array PCM data
+            const inputData = e.inputBuffer.getChannelData(0);
+            
+            // Note: Sending large float arrays via WS is slow; converting to regular Array
+            // Ensure array is constructed safely
+            const payload = Array.from(inputData);
+            socket.emit('audio_chunk', payload);
+        };
+
+        (function loop() {
+          if (!detecting) return;
+          analyser.getByteFrequencyData(buf);
+          const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
+          const pct = Math.min(100, avg / 128 * 100);
+          document.getElementById('db-fill').style.width = pct + '%';
+          document.getElementById('db-val').textContent = Math.round(avg - 128) + ' dB';
+          rafId = requestAnimationFrame(loop);
+        })();
+      } catch (e) {
+          console.error(e);
+          simulateAudio(); 
+      }
+    }
+    
+    let simAudioRaf;
+    function simulateAudio() {
+      (function loop() {
+        if (!detecting) return;
+        const pct = 20 + Math.random() * 50;
+        document.getElementById('db-fill').style.width = pct + '%';
+        document.getElementById('db-val').textContent = Math.round(-40 + pct * 0.5) + ' dB';
+        simAudioRaf = setTimeout(loop, 150);
+      })();
+    }
+    
+    function stopAudioMeter() {
+      cancelAnimationFrame(rafId);
+      clearTimeout(simAudioRaf);
+      if (processorNode) {
+          processorNode.disconnect();
+          processorNode = null;
+      }
+      if (audioSource) {
+          audioSource.disconnect();
+          audioSource = null;
+      }
+      if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    }
+
+    // ── Model Emotion Config ─────────────────────────────────────
+    const EMOTIONS = [
+      { label: 'Angry', emoji: '😠', color: 'var(--red)', bar: '#fc8181' },
+      { label: 'Disgust', emoji: '🤢', color: '#f6e05e', bar: '#f6e05e' },
+      { label: 'Fear', emoji: '😨', color: 'var(--accent4)', bar: '#b794f4' },
+      { label: 'Happy', emoji: '😄', color: 'var(--accent3)', bar: '#68d391' },
+      { label: 'Neutral', emoji: '😐', color: 'var(--muted)', bar: '#718096' },
+      { label: 'Sad', emoji: '😢', color: 'var(--accent)', bar: '#63b3ed' },
+      { label: 'Surprise', emoji: '😲', color: 'var(--accent2)', bar: '#f6ad55' },
+    ];
+
+    let sessionData = [];
+    let sessionRunning = false;
+    let sessionStart = null;
+    let timerInterval = null;
+    let sessCount = 0;
+
+    // Hidden canvas for frame capture
+    const captureCanvas = document.createElement('canvas');
+    captureCanvas.width = 640;
+    captureCanvas.height = 480;
+    const captureCtx = captureCanvas.getContext('2d');
+
+    function setEmotion(emo, conf, probArrs) {
+      const emoji = document.getElementById('emo-emoji');
+      const label = document.getElementById('emo-label');
+      emoji.textContent = emo.emoji;
+      emoji.style.animation = 'none';
+      requestAnimationFrame(() => { emoji.style.animation = 'emoPop 0.4s cubic-bezier(0.16,1,0.3,1) both'; });
+      label.textContent = emo.label;
+      label.style.color = emo.color;
+      document.getElementById('conf-val').textContent = conf + '%';
+      document.getElementById('conf-bar').style.width = conf + '%';
+
+      // Breakdown
+      const breakdown = document.getElementById('breakdown-rows');
+      if (probArrs) {
+          // Standardize EMOTIONS array with probabilities block from backend:
+          const backendLabels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']; 
+          
+          let html = '';
+          for (let i = 0; i < 7; i++) {
+              let pct = Math.round(probArrs[i] * 100);
+              let name = backendLabels[i];
+              let uiEmo = EMOTIONS.find(e => e.label === name) || EMOTIONS[4];
+              html += `<div class="emo-row">
+                <span class="emo-row-name">${name}</span>
+                <div class="emo-row-bar"><div class="emo-row-fill" style="width:${pct}%;background:${uiEmo.bar}"></div></div>
+                <span class="emo-row-pct">${pct}%</span>
+              </div>`;
+          }
+          breakdown.innerHTML = html;
+      }
+    }
+
+    // ── Pre-rendered Graph ────────────────────────────────────
+    async function loadTimelineGraph() {
+      const img = document.getElementById('timeline-graph-img');
+      const placeholder = document.getElementById('timeline-graph-placeholder');
+      const statusObj = document.getElementById('timeline-status');
+      
+      try {
+        statusObj.style.display = 'block';
+        statusObj.textContent = 'Fetching updated graph...';
+        statusObj.style.color = 'var(--accent)';
+        
+        const timestamp = new Date().getTime();
+        const response = await fetch(`http://127.0.0.1:5000/api/timeline-graph?t=${timestamp}`);
+        if (!response.ok) throw new Error('Network ok is false');
+        
+        const blob = await response.blob();
+        const imageUrl = URL.createObjectURL(blob);
+        img.src = imageUrl;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+        
+        const now = new Date();
+        statusObj.textContent = `Last graph generated: ${now.toLocaleTimeString()}`;
+        statusObj.style.color = 'var(--accent3)';
+      } catch (e) {
+        console.error("Failed to load timeline graph:", e);
+        statusObj.textContent = 'Graph temporarily unavailable.';
+        statusObj.style.color = 'var(--muted)';
+      }
+    }
+    
+    // Load once on dashboard open
+    loadTimelineGraph();
+
+    // ── Session ───────────────────────────────────────────────
+    function toggleSession() {
+      if (!sessionRunning) {
+        sessionRunning = true;
+        sessionData = [];
+        sessionStart = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+        document.getElementById('sess-badge').textContent = 'RECORDING';
+        document.getElementById('sess-badge').className = 'card-badge badge-live';
+        document.getElementById('sess-start-btn').textContent = '⏹ Stop';
+        document.getElementById('sess-export-btn').disabled = true;
+        document.getElementById('sess-clear-btn').disabled = true;
+        document.getElementById('sess-emotions').textContent = '0';
+        document.getElementById('sess-peak').textContent = '—';
+        document.getElementById('sess-avgconf').textContent = '—';
+        sessCount++;
+        document.getElementById('stat-sessions').textContent = sessCount;
+        toast('Session recording started.', 'var(--accent4)');
+      } else {
+        sessionRunning = false;
+        clearInterval(timerInterval);
+        document.getElementById('sess-badge').textContent = 'STOPPED';
+        document.getElementById('sess-badge').className = 'card-badge badge-idle';
+        document.getElementById('sess-start-btn').textContent = '⏺ Record';
+        document.getElementById('sess-export-btn').disabled = sessionData.length === 0;
+        document.getElementById('sess-clear-btn').disabled = false;
+        toast('Session saved. ' + sessionData.length + ' emotion samples.', 'var(--accent3)');
+      }
+    }
+
+    function updateTimer() {
+      const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+      const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+      const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+      const s = String(elapsed % 60).padStart(2, '0');
+      const el = document.getElementById('timer-clock');
+      el.textContent = `${h}:${m}:${s}`;
+      el.className = 'timer-clock running';
+    }
+
+    function exportSession() {
+      if (!sessionData.length) return;
+      const rows = [['Time', 'Emotion', 'Confidence']];
+      sessionData.forEach(d => rows.push([new Date(d.time).toISOString(), d.emo, d.conf + '%']));
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `emosense-session-${Date.now()}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      toast('Session exported as CSV.', 'var(--accent3)');
+    }
+
+    function clearSession() {
+      sessionData = [];
+      document.getElementById('timer-clock').textContent = '00:00:00';
+      document.getElementById('timer-clock').className = 'timer-clock';
+      document.getElementById('sess-emotions').textContent = '0';
+      document.getElementById('sess-peak').textContent = '—';
+      document.getElementById('sess-avgconf').textContent = '—';
+      document.getElementById('sess-badge').textContent = 'INACTIVE';
+      document.getElementById('sess-badge').className = 'card-badge badge-idle';
+      document.getElementById('sess-export-btn').disabled = true;
+      document.getElementById('sess-clear-btn').disabled = true;
+      toast('Session cleared.', 'var(--muted)');
+    }
+
+    // ── Toast ─────────────────────────────────────────────────
+    let toastTimer;
+    function toast(msg, color = 'var(--accent)') {
+      const el = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      document.getElementById('toast-dot').style.background = color;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+    }
+
+    // ── Auth guard ────────────────────────────────────────────
+    if (!localStorage.getItem('token')) {
+      window.location.href = 'index.html';
+    }
+  </script>
+
+</body>
+
+</html>

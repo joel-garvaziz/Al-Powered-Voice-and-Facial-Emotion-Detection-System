@@ -60,7 +60,32 @@ hubert_model.eval()
 EMOTIONS = ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad', 'surprise']
 
 # ==========================================================
-# 2. APPLICATION GLOBAL STATE & THREADING ARRAYS
+# 2. NOISE-ROBUST AUDIO HELPERS
+# ==========================================================
+
+def estimate_noise_floor(audio_clip, noise_percentile=15):
+    """Estimate background noise floor from the lower percentile of frame energies."""
+    frame_size = 512
+    hop_size = 256
+    frames = []
+    for start in range(0, len(audio_clip) - frame_size, hop_size):
+        frame = audio_clip[start:start + frame_size]
+        frames.append(float(np.sqrt(np.mean(frame ** 2))))
+    if not frames:
+        return 0.0
+    return float(np.percentile(frames, noise_percentile))
+
+
+def compute_snr(audio_clip, noise_floor):
+    """Estimate SNR in dB given a noise floor measurement."""
+    signal_rms = float(np.sqrt(np.mean(audio_clip ** 2)))
+    if noise_floor < 1e-9:
+        return 60.0  # Essentially clean signal
+    return float(20 * np.log10(max(signal_rms, 1e-9) / max(noise_floor, 1e-9)))
+
+
+# ==========================================================
+# 3. APPLICATION GLOBAL STATE & THREADING ARRAYS
 # ==========================================================
 SAMPLE_RATE = 16000
 DURATION = 3  
@@ -85,52 +110,128 @@ def audio_callback(indata, frames, time_info, status):
 
 def extraction_worker():
     global latest_emotion, latest_face_crop, audio_buffer, running, timeline_data, start_time
-    
+
     # Wait until start_time is officially set by the Main Loop
     while start_time is None and running: time.sleep(0.1)
-        
+
     while running:
         try:
             audio_clip = audio_buffer.copy()
+            max_amp = float(np.max(np.abs(audio_clip)))
+
+            # 1. Dynamic Noise Floor & SNR Calculation
+            # Robustly identifies constant background fan/ambient noise vs real speech
+            noise_floor = estimate_noise_floor(audio_clip, noise_percentile=10)
+            snr_db = compute_snr(audio_clip, noise_floor)
             
+            # 2. Determine if it's genuine speech. (Tightened for noise robustness)
+            # Speech has bursts of energy, so SNR > 8.5 dB. Constant background noise should stay below this.
+            is_speech = (snr_db >= 8.5) and (max_amp >= 0.03)
+
+            # 3. Handle background noise gracefully WITHOUT normalizing it!
+            if is_speech:
+                # Normalize only clear speech
+                audio_clip = audio_clip / max_amp
+
+            # 4. Extract Face Input
             is_masked = False
             if latest_face_crop is not None:
                 face_img = latest_face_crop.copy()
             else:
-                face_img = np.zeros((48, 48, 1), dtype='float32') # Blank dummy face
+                face_img = np.zeros((48, 48, 1), dtype='float32')
                 is_masked = True
-                
+
             face_input = np.reshape(face_img, (1, 48, 48, 1))
-            
+
+            # 5. HuBERT audio features
             inputs = processor(audio_clip, sampling_rate=SAMPLE_RATE, return_tensors="pt", padding=True)
             inputs = {k: v.to(device) for k, v in inputs.items()}
             with torch.no_grad():
                 outputs = hubert_model(**inputs)
-            
+
             hidden_states = outputs.hidden_states
             layer_mean = torch.stack(hidden_states[-4:]).mean(dim=0)
             pooled = layer_mean.mean(dim=1).squeeze().cpu().numpy()
             voice_input = voice_scaler.transform([pooled])
-            
-            # Predict
-            prediction = fused_model.predict([face_input, voice_input], verbose=0)[0]
-            idx = np.argmax(prediction)
-            conf = prediction[idx] * 100
-            
-            if is_masked:
-                latest_emotion = f"VOICE ONLY: {EMOTIONS[idx].capitalize()} ({conf:.1f}%)"
+
+            # 6. Run all model predictions
+            fused_pred = fused_model.predict([face_input, voice_input], verbose=0)[0]
+            fused_idx = np.argmax(fused_pred)
+            fused_conf = fused_pred[fused_idx] * 100
+
+            bf_emotions = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"]
+            base_face_pred = base_face.predict(face_input, verbose=0)[0] if not is_masked else np.zeros((7,))
+            bf_idx = np.argmax(base_face_pred)
+
+            base_voice_pred = base_voice.predict(voice_input, verbose=0)[0]
+            bv_idx = np.argmax(base_voice_pred)
+
+            # Remap face model label order -> fused model label order
+            mapped_face_pred = np.zeros(7, dtype=float)
+            mapped_face_pred[0] = base_face_pred[0]  # Angry
+            mapped_face_pred[1] = base_face_pred[1]  # Disgust
+            mapped_face_pred[2] = base_face_pred[2]  # Fear
+            mapped_face_pred[3] = base_face_pred[3]  # Happy
+            mapped_face_pred[4] = base_face_pred[6]  # Neutral
+            mapped_face_pred[5] = base_face_pred[4]  # Sad
+            mapped_face_pred[6] = base_face_pred[5]  # Surprise
+
+            # Remap voice model (8 classes) to 7
+            mapped_voice_pred = np.zeros(7, dtype=float)
+            if len(base_voice_pred) == 8:
+                mapped_voice_pred[0] = base_voice_pred[0]
+                mapped_voice_pred[1] = base_voice_pred[2]
+                mapped_voice_pred[2] = base_voice_pred[3]
+                mapped_voice_pred[3] = base_voice_pred[4]
+                mapped_voice_pred[4] = base_voice_pred[5] + base_voice_pred[1]
+                mapped_voice_pred[5] = base_voice_pred[6]
+                mapped_voice_pred[6] = base_voice_pred[7]
             else:
-                latest_emotion = f"FUSED EMOTION: {EMOTIONS[idx].capitalize()} ({conf:.1f}%)"
-                
+                mapped_voice_pred = base_voice_pred[:7]
+
+            # 7. Clean binary routing
+            if is_speech:
+                if is_masked:
+                    # Voice only -> use voice model
+                    latest_emotion = f"VOICE ONLY: {EMOTIONS[np.argmax(mapped_voice_pred)].capitalize()} ({mapped_voice_pred[np.argmax(mapped_voice_pred)]*100:.1f}%)"
+                    raw_pred_array = mapped_voice_pred
+                else:
+                    # Speech & Face -> logic check: if SNR is borderline and Face is strong, fallback to Face
+                    fused_conf = float(np.max(fused_pred))
+                    face_conf = float(np.max(mapped_face_pred))
+                    
+                    if fused_conf < 0.35 and face_conf > 0.60:
+                        # Fusion is unsure (likely noise interference), Face is very sure. Trust Face.
+                        latest_emotion = f"FUSED (VISUAL ASSET): {EMOTIONS[np.argmax(mapped_face_pred)].capitalize()} ({face_conf*100:.1f}%)"
+                        raw_pred_array = mapped_face_pred
+                    else:
+                        # Speech & Face -> use Fused Model
+                        latest_emotion = f"FUSED EMOTION: {EMOTIONS[fused_idx].capitalize()} ({fused_conf*100:.1f}%)"
+                        raw_pred_array = fused_pred
+            else:
+                # NO SPEECH (Either pure silence or background noise)
+                if is_masked:
+                    # No face, no speech -> wait
+                    latest_emotion = "AWAITING USER..."
+                    raw_pred_array = np.zeros((7,))
+                else:
+                    # Face present, no speech -> Face Model ONLY
+                    face_idx = np.argmax(mapped_face_pred)
+                    face_conf = mapped_face_pred[face_idx] * 100
+                    latest_emotion = f"FACE ONLY: {EMOTIONS[face_idx].capitalize()} ({face_conf:.1f}%)"
+                    raw_pred_array = mapped_face_pred
+
             # Log for Timeline
             elapsed = time.time() - start_time
             if elapsed > 0:
-                timeline_data.append((elapsed, prediction))
-                
+                timeline_data.append((elapsed, raw_pred_array))
+
+            print(f"[Debug] Face:{EMOTIONS[np.argmax(mapped_face_pred)]} | Voice:{EMOTIONS[bv_idx]} | SNR:{snr_db:.1f}dB | Speech:{is_speech} -> {latest_emotion}")
+
         except Exception as e:
             print(f"[Thread Error] Inference failed: {e}")
-        
-        time.sleep(0.5) 
+
+        time.sleep(0.5)
 
 # ==========================================================
 # 4. MAIN WEBCAM UI LOOP

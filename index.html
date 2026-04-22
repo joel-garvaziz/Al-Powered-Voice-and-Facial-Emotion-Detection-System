@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMOSENSE — Access Portal</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050810;
+            --surface: #0c1220;
+            --border: rgba(99, 179, 237, 0.12);
+            --accent: #63b3ed;
+            --accent2: #f6ad55;
+            --accent3: #68d391;
+            --accent4: #b794f4;
+            --text: #e2e8f0;
+            --muted: #4a5568;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Syne', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .noise {
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.5;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .scanline {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: repeating-linear-gradient(to bottom, transparent 0px, transparent 3px, rgba(255, 255, 255, 0.012) 3px, rgba(255, 255, 255, 0.012) 4px);
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: 1fr 460px;
+            width: min(1000px, 95vw);
+            min-height: 590px;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            box-shadow: 0 0 80px rgba(99, 179, 237, 0.07), 0 0 1px rgba(99, 179, 237, 0.3);
+            animation: wrapperReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes wrapperReveal {
+            from {
+                opacity: 0;
+                transform: translateY(24px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        /* LEFT */
+        .left-panel {
+            background: linear-gradient(135deg, #060d1a 0%, #0a1628 100%);
+            border-right: 1px solid var(--border);
+            padding: 52px 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .emotion-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid;
+            opacity: 0.15;
+            animation: doSpin linear infinite;
+        }
+
+        .ring1 {
+            width: 340px;
+            height: 340px;
+            top: -80px;
+            right: -100px;
+            border-color: var(--accent);
+            animation-duration: 28s;
+        }
+
+        .ring2 {
+            width: 200px;
+            height: 200px;
+            top: 60px;
+            right: -30px;
+            border-color: var(--accent2);
+            animation-duration: 18s;
+            animation-direction: reverse;
+        }
+
+        .ring3 {
+            width: 480px;
+            height: 480px;
+            bottom: -180px;
+            left: -140px;
+            border-color: var(--accent3);
+            animation-duration: 40s;
+        }
+
+        @keyframes doSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .emo-vis {
+            position: absolute;
+            right: 44px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 160px;
+            height: 160px;
+        }
+
+        .emo-vis svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .brand-mark {
+            font-size: 11px;
+            letter-spacing: 0.22em;
+            color: var(--accent);
+            font-family: 'DM Mono', monospace;
+            text-transform: uppercase;
+            opacity: 0.7;
+            animation: fadeUp 0.8s 0.3s both;
+        }
+
+        .left-title {
+            font-size: clamp(26px, 3.2vw, 38px);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            animation: fadeUp 0.8s 0.5s both;
+        }
+
+        .left-title .accent-blue {
+            color: var(--accent);
+        }
+
+        .left-title .accent-purple {
+            color: var(--accent4);
+        }
+
+        .left-desc {
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+            color: var(--muted);
+            max-width: 280px;
+            animation: fadeUp 0.8s 0.7s both;
+            transition: opacity 0.4s;
+        }
+
+        .emo-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            animation: fadeUp 0.8s 0.9s both;
+        }
+
+        .emo-tag {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            padding: 4px 10px;
+            border-radius: 2px;
+            border: 1px solid;
+            text-transform: uppercase;
+        }
+
+        .tag-joy {
+            color: #f6e05e;
+            border-color: rgba(246, 224, 94, 0.3);
+            background: rgba(246, 224, 94, 0.05);
+        }
+
+        .tag-calm {
+            color: var(--accent3);
+            border-color: rgba(104, 211, 145, 0.3);
+            background: rgba(104, 211, 145, 0.05);
+        }
+
+        .tag-focus {
+            color: var(--accent);
+            border-color: rgba(99, 179, 237, 0.3);
+            background: rgba(99, 179, 237, 0.05);
+        }
+
+        .tag-stress {
+            color: var(--accent2);
+            border-color: rgba(246, 173, 85, 0.3);
+            background: rgba(246, 173, 85, 0.05);
+        }
+
+        .tag-neutral {
+            color: #a0aec0;
+            border-color: rgba(160, 174, 192, 0.3);
+            background: rgba(160, 174, 192, 0.05);
+        }
+
+        .waveform {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            height: 24px;
+        }
+
+        .wave-bar {
+            width: 3px;
+            background: var(--accent);
+            border-radius: 2px;
+            opacity: 0.6;
+            animation: waveAnim 1.4s ease-in-out infinite;
+        }
+
+        @keyframes waveAnim {
+
+            0%,
+            100% {
+                height: 4px;
+            }
+
+            50% {
+                height: 20px;
+            }
+        }
+
+        /* RIGHT */
+        .right-panel {
+            background: var(--surface);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-pane {
+            position: absolute;
+            inset: 0;
+            padding: 42px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: transform 0.55s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.4s ease;
+            will-change: transform, opacity;
+            overflow-y: auto;
+        }
+
+        .pane-login {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .pane-register {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .right-panel.show-register .pane-login {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        .right-panel.show-register .pane-register {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Form elements */
+        .form-header {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.25em;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .form-label.purple {
+            color: var(--accent4);
+        }
+
+        .form-title {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .field {
+            margin-bottom: 13px;
+        }
+
+        .field label {
+            display: block;
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 10px 16px 10px 42px;
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            caret-color: var(--accent);
+        }
+
+        .input-wrap input::placeholder {
+            color: var(--muted);
+        }
+
+        .input-wrap input:focus {
+            border-color: rgba(99, 179, 237, 0.5);
+            box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.08);
+            background: rgba(99, 179, 237, 0.04);
+        }
+
+        .pf input:focus {
+            border-color: rgba(183, 148, 244, 0.5) !important;
+            box-shadow: 0 0 0 3px rgba(183, 148, 244, 0.08) !important;
+            background: rgba(183, 148, 244, 0.04) !important;
+            caret-color: var(--accent4) !important;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            width: 15px;
+            height: 15px;
+            transition: color 0.2s;
+            pointer-events: none;
+        }
+
+        .input-wrap:focus-within .input-icon {
+            color: var(--accent);
+        }
+
+        .pf:focus-within .input-icon {
+            color: var(--accent4) !important;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 13px;
+        }
+
+        .field-row .field {
+            margin-bottom: 0;
+        }
+
+        /* Password strength */
+        .strength-meter {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .strength-seg {
+            height: 3px;
+            flex: 1;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.07);
+            transition: background 0.3s;
+        }
+
+        .s-weak {
+            background: #fc8181;
+        }
+
+        .s-fair {
+            background: var(--accent2);
+        }
+
+        .s-good {
+            background: var(--accent);
+        }
+
+        .s-strong {
+            background: var(--accent3);
+        }
+
+        .strength-label {
+            font-family: 'DM Mono', monospace;
+            font-size: 9px;
+            color: var(--muted);
+            margin-top: 4px;
+            letter-spacing: 0.1em;
+            transition: color 0.3s;
+        }
+
+        /* Mode */
+        .mode-label {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 7px;
+            display: block;
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 8px 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover {
+            border-color: rgba(99, 179, 237, 0.3);
+            background: rgba(99, 179, 237, 0.04);
+        }
+
+        .mode-btn.active {
+            border-color: rgba(99, 179, 237, 0.6);
+            background: rgba(99, 179, 237, 0.08);
+            box-shadow: 0 0 12px rgba(99, 179, 237, 0.1);
+        }
+
+        .mode-btn .mode-icon {
+            font-size: 16px;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .mode-btn .mode-name {
+            font-family: 'DM Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            text-transform: uppercase;
+            display: block;
+            transition: color 0.2s;
+        }
+
+        .mode-btn.active .mode-name {
+            color: var(--accent);
+        }
+
+        /* Role */
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .role-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .role-btn:hover {
+            border-color: rgba(183, 148, 244, 0.3);
+            background: rgba(183, 148, 244, 0.04);
+        }
+
+        .role-btn.active {
+            border-color: rgba(183, 148, 244, 0.6);
+            background: rgba(183, 148, 244, 0.08);
+        }
+
+        .role-icon {
+            font-size: 15px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .role-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 1px;
+        }
+
+        .role-desc {
+            font-family: 'DM Mono', monospace;
+            font-size: 9px;
+            color: var(--muted);
+            display: block;
+            letter-spacing: 0.04em;
+        }
+
+        .role-btn.active .role-desc {
+            color: rgba(183, 148, 244, 0.7);
+        }
+
+        /* Step progress */
+        .step-progress {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .step-node {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            transition: all 0.3s;
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
+            background: var(--surface);
+        }
+
+        .step-node.active {
+            border-color: var(--accent4);
+            color: var(--accent4);
+            box-shadow: 0 0 10px rgba(183, 148, 244, 0.25);
+        }
+
+        .step-node.done {
+            border-color: var(--accent3);
+            background: rgba(104, 211, 145, 0.1);
+            color: var(--accent3);
+        }
+
+        .step-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+            transition: background 0.4s;
+        }
+
+        .step-line.done {
+            background: rgba(104, 211, 145, 0.4);
+        }
+
+        .step-label {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'DM Mono', monospace;
+            font-size: 8px;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
+
+        /* Reg steps */
+        .reg-step {
+            display: none;
+        }
+
+        .reg-step.active {
+            display: block;
+            animation: fadeUp 0.4s both;
+        }
+
+        /* Pulse */
+        .pulse-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent3);
+            box-shadow: 0 0 8px var(--accent3);
+            animation: pulseAnim 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulseAnim {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
+        }
+
+        .pulse-text {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+        }
+
+        .pulse-text strong {
+            color: var(--accent3);
+            font-style: italic;
+            transition: opacity 0.3s;
+        }
+
+        /* Buttons */
+        .submit-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid rgba(99, 179, 237, 0.5);
+            border-radius: 2px;
+            padding: 12px;
+            font-family: 'Syne', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--accent);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(99, 179, 237, 0.12), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s;
+        }
+
+        .submit-btn:hover::before {
+            transform: translateX(100%);
+        }
+
+        .submit-btn:hover {
+            background: rgba(99, 179, 237, 0.08);
+            box-shadow: 0 0 20px rgba(99, 179, 237, 0.18);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.99);
+        }
+
+        .purple-btn {
+            border-color: rgba(183, 148, 244, 0.5);
+            color: var(--accent4);
+        }
+
+        .purple-btn::before {
+            background: linear-gradient(90deg, transparent, rgba(183, 148, 244, 0.12), transparent);
+        }
+
+        .purple-btn:hover {
+            background: rgba(183, 148, 244, 0.08);
+            box-shadow: 0 0 20px rgba(183, 148, 244, 0.18);
+        }
+
+        .ghost-btn {
+            width: auto;
+            padding: 12px 16px;
+            margin-bottom: 0;
+            border-color: rgba(255, 255, 255, 0.1);
+            color: var(--muted);
+            font-size: 14px;
+            letter-spacing: 0;
+        }
+
+        .ghost-btn:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+        }
+
+        .submit-btn.loading {
+            pointer-events: none;
+            color: transparent;
+        }
+
+        .submit-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid rgba(99, 179, 237, 0.3);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: doSpin 0.7s linear infinite;
+        }
+
+        .purple-btn.loading::after {
+            border-color: rgba(183, 148, 244, 0.3);
+            border-top-color: var(--accent4);
+        }
+
+        .form-footer {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            text-align: center;
+            letter-spacing: 0.08em;
+        }
+
+        .form-footer a {
+            color: var(--accent);
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .form-footer a.purple {
+            color: var(--accent4);
+        }
+
+        .form-footer a:hover {
+            opacity: 0.7;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider span {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            white-space: nowrap;
+        }
+
+        /* OTP */
+        .code-inputs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            justify-content: center;
+        }
+
+        .code-inputs input {
+            width: 42px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            font-family: 'DM Mono', monospace;
+            font-size: 20px;
+            color: var(--accent4);
+            text-align: center;
+            outline: none;
+            padding: 0;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            caret-color: var(--accent4);
+        }
+
+        .code-inputs input:focus {
+            border-color: rgba(183, 148, 244, 0.6);
+            box-shadow: 0 0 0 3px rgba(183, 148, 244, 0.1);
+        }
+
+        /* Consent */
+        .consent-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 11px;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .consent-row:hover {
+            border-color: rgba(183, 148, 244, 0.25);
+        }
+
+        .consent-box {
+            width: 16px;
+            height: 16px;
+            border: 1px solid rgba(183, 148, 244, 0.4);
+            border-radius: 2px;
+            flex-shrink: 0;
+            margin-top: 1px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .consent-box.checked {
+            background: rgba(183, 148, 244, 0.2);
+            border-color: var(--accent4);
+        }
+
+        .consent-box.checked::after {
+            content: '✓';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--accent4);
+        }
+
+        .consent-text {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            line-height: 1.7;
+            color: var(--muted);
+        }
+
+        .consent-text a {
+            color: var(--accent4);
+            text-decoration: none;
+        }
+
+        /* Success */
+        .success-overlay {
+            position: absolute;
+            inset: 0;
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .success-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .success-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            border: 2px solid var(--accent3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: var(--accent3);
+            box-shadow: 0 0 24px rgba(104, 211, 145, 0.3);
+            animation: successPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes successPop {
+            from {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-title {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            animation: fadeUp 0.5s 0.2s both;
+        }
+
+        .success-sub {
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            animation: fadeUp 0.5s 0.3s both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+    <div class="noise"></div>
+    <div class="scanline"></div>
+
+    <div class="wrapper">
+
+        <!-- ── LEFT ── -->
+        <div class="left-panel">
+            <div class="emotion-ring ring1"></div>
+            <div class="emotion-ring ring2"></div>
+            <div class="emotion-ring ring3"></div>
+
+            <div class="emo-vis">
+                <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="80" cy="80" r="72" stroke="rgba(99,179,237,0.08)" stroke-width="1" />
+                    <circle cx="80" cy="80" r="52" stroke="rgba(99,179,237,0.06)" stroke-width="1" />
+                    <line x1="80" y1="8" x2="80" y2="152" stroke="rgba(99,179,237,0.1)" stroke-width="0.5" />
+                    <line x1="8" y1="80" x2="152" y2="80" stroke="rgba(99,179,237,0.1)" stroke-width="0.5" />
+                    <line x1="27" y1="27" x2="133" y2="133" stroke="rgba(99,179,237,0.1)" stroke-width="0.5" />
+                    <line x1="133" y1="27" x2="27" y2="133" stroke="rgba(99,179,237,0.1)" stroke-width="0.5" />
+                    <polygon points="80,20 130,55 118,115 42,115 30,55" fill="rgba(99,179,237,0.08)"
+                        stroke="rgba(99,179,237,0.6)" stroke-width="1.5" stroke-linejoin="round">
+                        <animate attributeName="points"
+                            values="80,20 130,55 118,115 42,115 30,55;80,30 122,60 110,120 50,120 38,60;80,15 135,58 120,110 40,110 25,58;80,20 130,55 118,115 42,115 30,55"
+                            dur="6s" repeatCount="indefinite" calcMode="spline"
+                            keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1" />
+                    </polygon>
+                    <circle cx="80" cy="20" r="3.5" fill="#63b3ed" opacity="0.9">
+                        <animate attributeName="cy" values="20;30;15;20" dur="6s" repeatCount="indefinite"
+                            calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1" />
+                    </circle>
+                    <circle cx="130" cy="55" r="3.5" fill="#f6ad55" opacity="0.9">
+                        <animate attributeName="cx" values="130;122;135;130" dur="6s" repeatCount="indefinite"
+                            calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1" />
+                        <animate attributeName="cy" values="55;60;58;55" dur="6s" repeatCount="indefinite"
+                            calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1" />
+                    </circle>
+                    <circle cx="118" cy="115" r="3.5" fill="#68d391" opacity="0.9">
+                        <animate attributeName="cx" values="118;110;120;118" dur="6s" repeatCount="indefinite"
+                            calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1" />
+                    </circle>
+                    <circle cx="42" cy="115" r="3.5" fill="#f6e05e" opacity="0.9">
+                        <animate attributeName="cx" values="42;50;40;42" dur="6s" repeatCount="indefinite"
+                            calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1" />
+                    </circle>
+                    <circle cx="30" cy="55" r="3.5" fill="#b794f4" opacity="0.9">
+                        <animate attributeName="cx" values="30;38;25;30" dur="6s" repeatCount="indefinite"
+                            calcMode="spline" keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1" />
+                    </circle>
+                    <circle cx="80" cy="80" r="4" fill="rgba(99,179,237,0.5)" />
+                    <circle cx="80" cy="80" r="8" fill="none" stroke="rgba(99,179,237,0.2)" stroke-width="1">
+                        <animate attributeName="r" values="8;16;8" dur="3s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="1;0;1" dur="3s" repeatCount="indefinite" />
+                    </circle>
+                </svg>
+            </div>
+
+            <div>
+                <div class="brand-mark">EmoSense · v3.2.1</div>
+            </div>
+            <div>
+                <div class="left-title" id="left-title">Multimodal<br>Emotion<br><span class="accent-blue"
+                        id="title-word">Detection</span></div>
+            </div>
+            <div>
+                <p class="left-desc" id="left-desc">Analysing facial expression, vocal cadence &amp; physiological
+                    signals in real-time.</p>
+            </div>
+            <div class="emo-tags">
+                <span class="emo-tag tag-joy">Happy</span>
+                <span class="emo-tag tag-calm">Sad</span>
+                <span class="emo-tag tag-focus">Surprise</span>
+                <span class="emo-tag tag-stress">Angry</span>
+                <span class="emo-tag tag-neutral">Neutral</span>
+                <span class="emo-tag tag-neutral">Fear</span>
+                <span class="emo-tag tag-neutral">Disgust</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;animation:fadeUp 0.8s 1.1s both;">
+                <div class="waveform" id="waveform"></div>
+                <span
+                    style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.1em;">LIVE
+                    AUDIO</span>
+            </div>
+        </div>
+
+        <!-- ── RIGHT ── -->
+        <div class="right-panel" id="right-panel">
+
+            <!-- Success overlay -->
+            <div class="success-overlay" id="success-overlay">
+                <div class="success-icon">✓</div>
+                <div class="success-title" id="success-title">Access Granted</div>
+                <div class="success-sub" id="success-sub">Initialising emotion engine…</div>
+            </div>
+
+            <!-- ══ LOGIN ══ -->
+            <div class="form-pane pane-login">
+                <div class="form-header">
+                    <div class="form-label">System Access</div>
+                    <div class="form-title">Sign in to continue</div>
+                </div>
+                <div class="pulse-row">
+                    <div class="pulse-dot"></div>
+                    <div class="pulse-text">Emotion engine online — detecting <strong id="emo-word">calm</strong></div>
+                </div>
+                <div class="field">
+                    <label>Email Address</label>
+                    <div class="input-wrap">
+                        <svg class="input-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round">
+                            <circle cx="8" cy="5.5" r="2.5" />
+                            <path d="M2 13c0-3.3 2.7-5 6-5s6 1.7 6 5" />
+                        </svg>
+                        <input type="text" id="login-email" placeholder="operator@emosense.io" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Passphrase</label>
+                    <div class="input-wrap">
+                        <svg class="input-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="7" width="10" height="7" rx="1.5" />
+                            <path d="M5.5 7V5a2.5 2.5 0 015 0v2" />
+                        </svg>
+                        <input type="password" id="login-password" placeholder="••••••••••••" />
+                    </div>
+                </div>
+                <span class="mode-label">Detection Mode</span>
+                <div class="mode-selector" id="login-mode">
+                    <div class="mode-btn active" onclick="selectMode(this,'login-mode')"><span
+                            class="mode-icon">👁</span><span class="mode-name">Visual</span></div>
+                    <div class="mode-btn" onclick="selectMode(this,'login-mode')"><span class="mode-icon">🎙</span><span
+                            class="mode-name">Audio</span></div>
+                    <div class="mode-btn" onclick="selectMode(this,'login-mode')"><span class="mode-icon">⚡</span><span
+                            class="mode-name">Fusion</span></div>
+                </div>
+                <button class="submit-btn" id="login-btn" onclick="handleLogin()">Authenticate &amp; Enter</button>
+                <div class="divider"><span>New to EmoSense?</span></div>
+                <button class="submit-btn purple-btn" onclick="showRegister()" style="margin-bottom:0;">Create an
+                    Account →</button>
+            </div>
+
+            <!-- ══ REGISTER ══ -->
+            <div class="form-pane pane-register">
+                <div class="form-header">
+                    <div class="form-label purple">New Operator</div>
+                    <div class="form-title">Create an account</div>
+                </div>
+
+                <!-- Step progress -->
+                <div class="step-progress">
+                    <div class="step-node active" id="sn1">1<span class="step-label">Profile</span></div>
+                    <div class="step-line" id="sl1"></div>
+                    <div class="step-node" id="sn2">2<span class="step-label">Credentials</span></div>
+                    <div class="step-line" id="sl2"></div>
+                    <div class="step-node" id="sn3">3<span class="step-label">Verify</span></div>
+                </div>
+
+                <!-- STEP 1 -->
+                <div class="reg-step active" id="reg-step-1">
+                    <div class="field-row">
+                        <div class="field">
+                            <label>First Name</label>
+                            <div class="input-wrap pf">
+                                <svg class="input-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                    stroke-width="1.5" stroke-linecap="round">
+                                    <circle cx="8" cy="5.5" r="2.5" />
+                                    <path d="M2 13c0-3.3 2.7-5 6-5s6 1.7 6 5" />
+                                </svg>
+                                <input type="text" placeholder="" id="r-fname" />
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>Last Name</label>
+                            <div class="input-wrap pf">
+                                <svg class="input-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                    stroke-width="1.5" stroke-linecap="round">
+                                    <circle cx="8" cy="5.5" r="2.5" />
+                                    <path d="M2 13c0-3.3 2.7-5 6-5s6 1.7 6 5" />
+                                </svg>
+                                <input type="text" placeholder="" id="r-lname" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Operator ID(Username)</label>
+                        <div class="input-wrap pf">
+                            <svg class="input-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="1.5" y="3.5" width="13" height="9" rx="1.5" />
+                                <path d="M1.5 5.5l6.5 4 6.5-4" />
+                            </svg>
+                            <input type="email" placeholder="ada@research.io" id="r-email" />
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Organisation</label>
+                        <div class="input-wrap pf">
+                            <svg class="input-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round">
+                                <rect x="2" y="6" width="12" height="8" rx="1" />
+                                <path d="M5 6V4a3 3 0 016 0v2" />
+                            </svg>
+                            <input type="text" placeholder="Research Institute / Company" />
+                        </div>
+                    </div>
+                    <span class="mode-label">Operator Role</span>
+                    <div class="role-selector">
+                        <div class="role-btn active" onclick="selectRole(this)"><span class="role-icon">🔬</span><span
+                                class="role-name">Researcher</span><span class="role-desc">Data collection &amp;
+                                analysis</span></div>
+                        <div class="role-btn" onclick="selectRole(this)"><span class="role-icon">🩺</span><span
+                                class="role-name">Clinician</span><span class="role-desc">Patient monitoring</span>
+                        </div>
+                        <div class="role-btn" onclick="selectRole(this)"><span class="role-icon">🛠</span><span
+                                class="role-name">Engineer</span><span class="role-desc">System integration</span></div>
+                        <div class="role-btn" onclick="selectRole(this)"><span class="role-icon">🎓</span><span
+                                class="role-name">Educator</span><span class="role-desc">Teaching &amp; training</span>
+                        </div>
+                    </div>
+                    <button class="submit-btn purple-btn" onclick="nextStep(2)">Continue — Credentials →</button>
+                    <div class="form-footer">Already registered? <a class="purple" onclick="showLogin()">Sign in</a>
+                    </div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="reg-step" id="reg-step-2">
+                    <div class="field">
+                        <label>Email Address</label>
+                        <div class="input-wrap pf">
+                            <svg class="input-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round">
+                                <circle cx="8" cy="5.5" r="2.5" />
+                                <path d="M2 13c0-3.3 2.7-5 6-5s6 1.7 6 5" />
+                            </svg>
+                            <input type="text" placeholder="ada_lovelace_01" />
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Passphrase</label>
+                        <div class="input-wrap pf">
+                            <svg class="input-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="7" width="10" height="7" rx="1.5" />
+                                <path d="M5.5 7V5a2.5 2.5 0 015 0v2" />
+                            </svg>
+                            <input type="password" id="pw1" placeholder="Min. 12 characters"
+                                oninput="checkStrength(this.value)" />
+                        </div>
+                        <div class="strength-meter">
+                            <div class="strength-seg" id="seg1"></div>
+                            <div class="strength-seg" id="seg2"></div>
+                            <div class="strength-seg" id="seg3"></div>
+                            <div class="strength-seg" id="seg4"></div>
+                        </div>
+                        <div class="strength-label" id="strength-label">Enter a passphrase</div>
+                    </div>
+                    <div class="field">
+                        <label>Confirm Passphrase</label>
+                        <div class="input-wrap pf">
+                            <svg class="input-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="7" width="10" height="7" rx="1.5" />
+                                <path d="M5.5 7V5a2.5 2.5 0 015 0v2" />
+                            </svg>
+                            <input type="password" placeholder="Repeat passphrase" id="pw2" />
+                        </div>
+                    </div>
+                    <span class="mode-label">Default Detection Mode</span>
+                    <div class="mode-selector" id="reg-mode">
+                        <div class="mode-btn active" onclick="selectMode(this,'reg-mode')"><span
+                                class="mode-icon">👁</span><span class="mode-name">Visual</span></div>
+                        <div class="mode-btn" onclick="selectMode(this,'reg-mode')"><span
+                                class="mode-icon">🎙</span><span class="mode-name">Audio</span></div>
+                        <div class="mode-btn" onclick="selectMode(this,'reg-mode')"><span
+                                class="mode-icon">⚡</span><span class="mode-name">Fusion</span></div>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-bottom:12px;">
+                        <button class="submit-btn ghost-btn" onclick="nextStep(1)">←</button>
+                        <button class="submit-btn purple-btn" id="send-otp-btn" style="flex:1;margin-bottom:0;"
+                            onclick="sendOtp()">Continue — Verify →</button>
+                    </div>
+                    <div class="form-footer">Already registered? <a class="purple" onclick="showLogin()">Sign in</a>
+                    </div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div class="reg-step" id="reg-step-3">
+                    <p
+                        style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:14px;">
+                        A 6-digit verification code was sent to <span style="color:var(--accent4);"
+                            id="verify-email">your email</span>. Enter it below to activate your account.
+                    </p>
+                    <span class="mode-label">Verification Code</span>
+                    <div class="code-inputs" id="code-inputs">
+                        <input type="text" maxlength="1" inputmode="numeric" oninput="codeNav(this,0)"
+                            onkeydown="codeBack(event,0)" />
+                        <input type="text" maxlength="1" inputmode="numeric" oninput="codeNav(this,1)"
+                            onkeydown="codeBack(event,1)" />
+                        <input type="text" maxlength="1" inputmode="numeric" oninput="codeNav(this,2)"
+                            onkeydown="codeBack(event,2)" />
+                        <input type="text" maxlength="1" inputmode="numeric" oninput="codeNav(this,3)"
+                            onkeydown="codeBack(event,3)" />
+                        <input type="text" maxlength="1" inputmode="numeric" oninput="codeNav(this,4)"
+                            onkeydown="codeBack(event,4)" />
+                        <input type="text" maxlength="1" inputmode="numeric" oninput="codeNav(this,5)"
+                            onkeydown="codeBack(event,5)" />
+                    </div>
+                    <div class="consent-row" onclick="toggleConsent()">
+                        <div class="consent-box" id="consent-box"></div>
+                        <p class="consent-text">I consent to biometric emotion data processing per the <a
+                                href="#">EmoSense Data Policy</a> and confirm I hold appropriate <a href="#">ethical
+                                clearance</a> for my use case.</p>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-bottom:12px;">
+                        <button class="submit-btn ghost-btn" onclick="nextStep(2)">←</button>
+                        <button class="submit-btn purple-btn" id="register-btn" style="flex:1;margin-bottom:0;"
+                            onclick="verifyOtp()">Create Account &amp; Enter</button>
+                    </div>
+                    <div id="otp-error" style="display:none;font-family:'DM Mono',monospace;font-size:11px;
+                        color:#fc8181;text-align:center;margin-bottom:10px;padding:8px;
+                        border:1px solid rgba(252,129,129,0.3);border-radius:4px;background:rgba(252,129,129,0.07);">
+                    </div>
+                    <div class="divider"><span>Didn't receive a code?</span></div>
+                    <div style="text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);">
+                        <a id="resend-link" style="color:var(--accent4);cursor:pointer;" onclick="resendOtp()">Resend
+                            code</a>
+                        &nbsp;·&nbsp; Check spam &nbsp;·&nbsp;
+                        <a onclick="showLogin()" style="color:var(--accent);cursor:pointer;">Sign in</a>
+                    </div>
+                </div>
+
+            </div><!-- /pane-register -->
+        </div><!-- /right-panel -->
+    </div><!-- /wrapper -->
+
+    <script>
+        // Waveform
+        const wf = document.getElementById('waveform');
+        for (let i = 0; i < 18; i++) { const b = document.createElement('div'); b.className = 'wave-bar'; b.style.animationDelay = `${(i * 0.08).toFixed(2)}s`; b.style.animationDuration = `${0.9 + Math.random() * 0.8}s`; if (i % 3 === 0) b.style.background = 'var(--accent2)'; if (i % 5 === 0) b.style.background = 'var(--accent3)'; wf.appendChild(b); }
+
+        // Particle canvas
+        const canvas = document.getElementById('bg-canvas'), ctx = canvas.getContext('2d');
+        let W, H, particles;
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+        function initP() { particles = Array.from({ length: 60 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.5 + 0.3, vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3, alpha: Math.random() * 0.4 + 0.05, color: ['63,179,237', '246,173,85', '104,211,145', '246,224,94'][Math.floor(Math.random() * 4)] })); }
+        function draw() { ctx.clearRect(0, 0, W, H); particles.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = W; if (p.x > W) p.x = 0; if (p.y < 0) p.y = H; if (p.y > H) p.y = 0; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(${p.color},${p.alpha})`; ctx.fill(); }); for (let i = 0; i < particles.length; i++)for (let j = i + 1; j < particles.length; j++) { const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y, d = Math.sqrt(dx * dx + dy * dy); if (d < 100) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(99,179,237,${0.06 * (1 - d / 100)})`; ctx.lineWidth = 0.5; ctx.stroke(); } } requestAnimationFrame(draw); }
+        resize(); initP(); draw(); window.addEventListener('resize', () => { resize(); initP(); });
+
+        // Emotion words
+        const emotions = ['calm', 'focused', 'alert', 'neutral', 'engaged', 'curious'];
+        let eidx = 0;
+        setInterval(() => { eidx = (eidx + 1) % emotions.length; const el = document.getElementById('emo-word'); if (el) { el.style.opacity = 0; setTimeout(() => { el.textContent = emotions[eidx]; el.style.opacity = 1; el.style.transition = 'opacity 0.3s'; }, 200); } }, 3000);
+
+        // Mode
+        function selectMode(el, gid) { document.querySelectorAll(`#${gid} .mode-btn`).forEach(b => b.classList.remove('active')); el.classList.add('active'); }
+
+        // Role
+        function selectRole(el) { document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
+
+        // Pane switch
+        function showRegister() {
+            document.getElementById('right-panel').classList.add('show-register');
+            document.getElementById('title-word').className = 'accent-purple';
+            document.getElementById('title-word').textContent = 'Registration';
+            document.getElementById('left-desc').textContent = 'Register a new operator profile. All biometric data is processed under strict ethical guidelines.';
+        }
+        function showLogin() {
+            document.getElementById('right-panel').classList.remove('show-register');
+            document.getElementById('title-word').className = 'accent-blue';
+            document.getElementById('title-word').textContent = 'Detection';
+            document.getElementById('left-desc').textContent = 'Analysing facial expression, vocal cadence & physiological signals in real-time.';
+            setTimeout(() => nextStep(1), 560);
+        }
+
+        // Steps
+        function nextStep(n) {
+            [1, 2, 3].forEach(s => {
+                document.getElementById(`reg-step-${s}`).classList.toggle('active', s === n);
+                const node = document.getElementById(`sn${s}`);
+                node.classList.remove('active', 'done');
+                const labels = ['Profile', 'Credentials', 'Verify'];
+                if (s < n) { node.classList.add('done'); node.innerHTML = `✓<span class="step-label">${labels[s - 1]}</span>`; }
+                else if (s === n) { node.classList.add('active'); node.innerHTML = `${s}<span class="step-label">${labels[s - 1]}</span>`; }
+                else { node.innerHTML = `${s}<span class="step-label">${labels[s - 1]}</span>`; }
+            });
+            [1, 2].forEach(l => document.getElementById(`sl${l}`).classList.toggle('done', l < n));
+            if (n === 3) { const e = document.getElementById('r-email'); if (e && e.value) document.getElementById('verify-email').textContent = e.value; }
+        }
+
+        // Password strength
+        function checkStrength(val) {
+            const segs = [1, 2, 3, 4].map(i => document.getElementById(`seg${i}`));
+            const lbl = document.getElementById('strength-label');
+            segs.forEach(s => { s.className = 'strength-seg'; });
+            let score = 0;
+            if (val.length >= 8) score++; if (val.length >= 12) score++;
+            if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++; if (/[^A-Za-z0-9]/.test(val)) score++;
+            const labels = ['Too short', 'Fair', 'Good', 'Strong'];
+            const classes = ['s-weak', 's-fair', 's-good', 's-strong'];
+            const colors = ['#fc8181', 'var(--accent2)', 'var(--accent)', 'var(--accent3)'];
+            for (let i = 0; i < score; i++)segs[i].classList.add(classes[score - 1]);
+            if (val.length > 0) { lbl.textContent = labels[score - 1] || 'Too short'; lbl.style.color = colors[score - 1] || '#fc8181'; }
+            else { lbl.textContent = 'Enter a passphrase'; lbl.style.color = 'var(--muted)'; }
+        }
+
+        // Consent
+        let consented = false;
+        function toggleConsent() { consented = !consented; document.getElementById('consent-box').classList.toggle('checked', consented); }
+
+        // OTP
+        function codeNav(el, idx) { if (el.value.length === 1) { const inputs = document.querySelectorAll('#code-inputs input'); if (idx < 5) inputs[idx + 1].focus(); } }
+        function codeBack(e, idx) { if (e.key === 'Backspace') { const inputs = document.querySelectorAll('#code-inputs input'); if (!inputs[idx].value && idx > 0) inputs[idx - 1].focus(); } }
+
+        // Success
+        function showSuccess(title, sub) {
+            const o = document.getElementById('success-overlay');
+            document.getElementById('success-title').textContent = title;
+            document.getElementById('success-sub').textContent = sub;
+            o.classList.add('visible');
+            setTimeout(() => o.classList.remove('visible'), 3200);
+        }
+
+        const API_BASE = 'http://127.0.0.1:5000';
+
+        async function handleLogin() {
+            const btn = document.getElementById('login-btn');
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value;
+
+            if (!email || !pass) { alert('Please fill in both fields.'); return; }
+
+            btn.classList.add('loading');
+
+            try {
+                const res = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password: pass }),
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alert(data.error || 'Login failed.');
+                    return;
+                }
+
+                // Store JWT & user info
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                showSuccess('Access Granted', 'Initialising emotion engine…');
+
+                // Redirect to dashboard after the success animation
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 3200);
+
+            } catch (err) {
+                console.error(err);
+                alert('Cannot reach the server. Make sure the backend is running.');
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+
+        // ── OTP helpers ────────────────────────────────────────────────────
+        function showOtpError(msg) {
+            const el = document.getElementById('otp-error');
+            el.textContent = msg;
+            el.style.display = msg ? 'block' : 'none';
+        }
+
+        let resendTimer = null;
+        function startResendCooldown(seconds = 30) {
+            const link = document.getElementById('resend-link');
+            link.style.pointerEvents = 'none';
+            link.style.opacity = '0.45';
+            let remaining = seconds;
+            link.textContent = `Resend (${remaining}s)`;
+            resendTimer = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(resendTimer);
+                    link.textContent = 'Resend code';
+                    link.style.pointerEvents = '';
+                    link.style.opacity = '';
+                } else {
+                    link.textContent = `Resend (${remaining}s)`;
+                }
+            }, 1000);
+        }
+
+        async function sendOtp() {
+            const btn = document.getElementById('send-otp-btn');
+            const firstName = document.getElementById('r-fname').value.trim();
+            const lastName = document.getElementById('r-lname').value.trim();
+            const email = document.getElementById('r-email').value.trim();
+            const password = document.getElementById('pw1').value;
+            const confirm = document.getElementById('pw2').value;
+
+            if (!firstName || !lastName || !email || !password) {
+                alert('Please fill in all required fields in Steps 1 & 2.'); return;
+            }
+            if (password !== confirm) {
+                alert('Passphrases do not match.'); return;
+            }
+            if (password.length < 8) {
+                alert('Password must be at least 8 characters.'); return;
+            }
+
+            btn.classList.add('loading');
+            try {
+                const res = await fetch(`${API_BASE}/send-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firstName, lastName, email, password }),
+                });
+                const data = await res.json();
+                if (!res.ok) { alert(data.error || 'Failed to send OTP.'); return; }
+
+                nextStep(3);
+                showOtpError('');
+                // Clear previous OTP inputs
+                document.querySelectorAll('#code-inputs input').forEach(i => i.value = '');
+                startResendCooldown(30);
+            } catch (err) {
+                console.error(err);
+                alert('Cannot reach the server. Make sure the backend is running.');
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+
+        async function resendOtp() {
+            await sendOtp();
+        }
+
+        async function verifyOtp() {
+            const btn = document.getElementById('register-btn');
+            const email = document.getElementById('r-email').value.trim();
+            const inputs = document.querySelectorAll('#code-inputs input');
+            const otp = Array.from(inputs).map(i => i.value).join('');
+
+            if (!consented) { showOtpError('Please accept the consent agreement.'); return; }
+            if (otp.length !== 6) { showOtpError('Enter the full 6-digit code.'); return; }
+
+            btn.classList.add('loading');
+            showOtpError('');
+            try {
+                const res = await fetch(`${API_BASE}/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp }),
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showOtpError(data.error || 'Verification failed.');
+                    return;
+                }
+
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                showSuccess('Account Created', 'Welcome to EmoSense. Redirecting…');
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 3200);
+
+            } catch (err) {
+                console.error(err);
+                showOtpError('Cannot reach the server. Make sure the backend is running.');
+            } finally {
+                btn.classList.remove('loading');
+            }
+        }
+    </script>
+</body>
+
+</html>

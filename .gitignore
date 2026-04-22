@@ -4,19 +4,47 @@ Datasets/
 # Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
 
-# System files
-.DS_Store
-Thumbs.db
+# Environment variables
+.env
+*.env
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
 
 # IDE settings
 .vscode/
 .idea/
+*.swp
+*.swo
 
-venv/
+# Large data and model files
 data/
-__pycache__/
-*.pyc
-
-# large training files
 *.npy
+*.h5
+*.keras
+*.pth
+*.pt
+*.onnx
+*.weights
+archive.npy
+
+# Compressed files
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.tar
+
+
+# System files
+.DS_Store
+Thumbs.db

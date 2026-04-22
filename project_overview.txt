@@ -1,0 +1,84 @@
+================================================================================
+EMOSENSE AI: DETAILED TECHNICAL SYSTEM ARCHITECTURE & WORKING
+================================================================================
+
+1. USER AUTHENTICATION & SECURITY MODULE
+-----------------------------------------
+The entry point of the system involves a multi-layer security protocol:
+- Identity Management: User data is stored in MySQL with passwords hashed 
+  using the BCrypt blowfish cipher (cost factor 12).
+- Two-Step Verification: We integrate the Brevo Transactional Email API. 
+  During registration, a 6-digit cryptographic OTP is generated. The account 
+  is only activated ('is_verified=1') after the user confirms the code.
+- Session Persistence: Once verified, the backend issues a JWT (JSON Web 
+  Token) containing encrypted claims (ID, Name, Email). This token is required 
+  for all subsequent API calls and WebSocket connections.
+
+2. FACIAL EMOTION RECOGNITION (VISUAL STREAM)
+----------------------------------------------
+- Face Localization: Uses OpenCV's Haar Cascade feature-based object detection. 
+  It identifies the coordinates (X, Y, W, H) of the face in real-time.
+- Preprocessing: The region of interest (ROI) is converted to grayscale to 
+  remove lighting bias, resized to a fixed 48x48 resolution, and normalized.
+- CNN Architecture: A Deep Convolutional Neural Network extracts spatial 
+  features (edges, mouth shape, eyebrow curvature) to predict probabilities 
+  across 7 classes: Angry, Disgust, Fear, Happy, Neutral, Sad, Surprise.
+
+3. VOCAL EMOTION RECOGNITION (ACOUSTIC STREAM)
+-----------------------------------------------
+- Signal Processing: Audio is captured at 16,000Hz. We utilize a 3-second 
+  rolling buffer to ensure there is enough context for emotional inflection.
+- Transformer Backbone: We leverage HuBERT (Hidden-unit BERT), a self-
+  supervised model. Unlike traditional MFCCs, HuBERT learns "speech units" 
+  similar to tokens in a language model, capturing deep semantic nuances.
+- Feature Mapping: The 1024-dimensional embeddings from HuBERT-Large are 
+  passed into a secondary classifier that maps acoustic energy and prosody 
+  to the consolidated 7-emotion scale.
+
+4. THE ATTENTION FUSION ENGINE (CORE INNOVATION)
+-------------------------------------------------
+This is the most critical element of the project. Instead of just picking 
+the "highest" score, we use a custom Attention-Gating Layer:
+- Cross-Modality Weighting: A separate neural sub-network analyzes both the 
+  facial features and vocal features simultaneously.
+- Dynamic Reliability: It computes a "Modality Importance" score. For 
+  example, if the user turns away (Face Masked), the Attention Gate automatically 
+  re-weights the system to rely 95% on the Voice stream. Conversely, in a 
+  noisy room, it prioritizes the Facial stream.
+- Result: This creates a "Fused Prediction" that is mathematically more 
+  robust than either model operating alone.
+
+5. COMMUNICATION & STREAMING (WEBSOCKETS)
+------------------------------------------
+- Protocol: Uses Flask-SocketIO (WebSockets) for ultra-low latency.
+- Bi-Directional Flow: 
+    *   Uplink: Browser streams video frames (base64) and audio samples (Float32).
+    *   Downlink: Server broadcasts the "Emotion Update" JSON packet (Emotion, 
+        Confidence, SNR Data) every 1 second.
+- Concurrency: Each session runs in an isolated Python thread, allowing the 
+  ML models to run inference while the UI remains fluid.
+
+6. ANALYTICS & DATABASE REPOSITORY
+-----------------------------------
+- Persistent Storage: Every completed session is logged in the MySQL 
+  'sessions' table with a timestamp and the dominant emotion.
+- Data Visualization:
+    *   Timeline PNG: After a session, Matplotlib generates a high-resolution 
+        graph showing the emotional fluctuations over time (0-10 seconds).
+    *   Historical Trends: The Analytics page uses Chart.js to query the 
+        database and visualize the user's mood distribution over the last week.
+
+7. ENVIRONMENTAL ROBUSTNESS TRIAD
+----------------------------------
+To make this "Production-Ready," we implemented three stability checks:
+- Noise Floor Estimation: Calculates background energy from the 10th 
+  percentile of the audio frames.
+- SNR Safeguard: A threshold of 8.5dB is required to trigger Vocal inference. 
+  This prevents background "hums" from influencing the AI.
+- Binary Routing: If no face is detected AND no speech is heard, the system 
+  intelligently defaults to "Awaiting data" rather than making a random guess.
+
+================================================================================
+PREPARED FOR: Final Project Presentation
+THEME: Multimodal Intelligence & Robust System Design
+================================================================================
